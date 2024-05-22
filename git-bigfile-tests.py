@@ -4,7 +4,7 @@
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
 __version__ = "0.1.0"
 
-from typing import Union, Optional, Tuple, List, Dict, Iterator, cast
+from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
 
 import os, sys
 import re
@@ -130,6 +130,15 @@ def zip_file(filename: str, content: Dict[str, str]) -> None:
             else:
                 f.writestr(name, data)
 
+def split2(inp: Iterable[str]) -> Iterator[Tuple[str, str]]:
+    for line in inp:
+        if " " in line:
+            a, b = line.split(" ", 1)
+            yield a, b.strip()
+def splits2(inp: str) ->  Iterator[Tuple[str, str]]:
+    for a, b in split2(inp.splitlines()):
+        yield a, b
+
 def get_caller_name() -> str:
     frame = inspect.currentframe().f_back.f_back  # type: ignore[union-attr]
     return frame.f_code.co_name  # type: ignore[union-attr]
@@ -180,6 +189,16 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"cd {testdir} && git add *.*")
         sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && git --no-pager diff --name-only")
+        out = output(F"cd {testdir} && git rev-list main --objects")
+        sizes = {}
+        for rev, name in splits2(out):
+            logg.debug("FOUND %s %s", rev, name)
+            if name in ("a.txt", "b.zip"):
+                siz = output(F"cd {testdir} && git cat-file -s {rev}")
+                sizes[name] = int(siz)
+        self.assertEqual(20 * KB, 20480)
+        self.assertEqual(sizes["a.txt"], 20480)
+        self.assertEqual(sizes["b.zip"], 20588)
         if not KEEP: self.rm_testdir()
 
 if __name__ == "__main__":
