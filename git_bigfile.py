@@ -29,6 +29,7 @@ except ImportError:
 REPO: Optional[str] = None
 GIT = "git"
 BRANCH = "main"
+PRETTY = False
 KEEP = False
 KB = 1024
 MB = KB * KB
@@ -36,6 +37,13 @@ MB = KB * KB
 def str_(obj: Any, no: str = '-') -> str:
     if not obj:
         return no
+    if isinstance(obj, int) and PRETTY:
+       text = str(obj)
+       if len(text) > 6:
+          return text[:-6] + "_" + text[-6:-3] + "_" + text[-3:]
+       if len(text) > 3:
+          return text[:-3] + "_" + text[-3:]
+       return text
     text = str(obj)
     if not text:
         return no
@@ -272,12 +280,15 @@ if __name__ == "__main__":
                   help="use different repo path [%default]")
     _o.add_option("-l", "--logfile", metavar="FILE", default="",
                   help="additionally save the output log to a file [%default]")
+    _o.add_option("-P", "--pretty", action="store_true", default=False,
+                  help="enhanced value results [%default]")
     opt, args = _o.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     GIT = opt.git
     BRANCH = opt.branch
     REPO = opt.repo or None
+    PRETTY = opt.pretty
     logg.debug("BRANCH %s REPO %s", BRANCH, REPO)
     #
     logfile = None
