@@ -186,14 +186,18 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
         yield disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext])
 
 def get_noext() -> str:
-    "\n".join(each_noext())
+    return "\n".join(list(each_noext()))
 def each_noext() -> Iterator[str]:
      noext = []
      for disksum, filesum, changes, ext, names in each_extsizes5():
+        logg.info("ext '%s'", ext)
         if not ext:
             noext = names.split("|")
+            logg.debug("found %s noext", len(noext))
      for name in noext:
-         yield name
+         if name:
+            logg.debug("name %s", name)
+            yield name
 
 def get_help():
     return __doc__
