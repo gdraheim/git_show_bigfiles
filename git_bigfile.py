@@ -177,7 +177,7 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
              disksums[ext] = 0
              filesums[ext] = 0
              dchanges[ext] = {}
-        if filename not in dchanges[ext]:
+        if name not in dchanges[ext]:
              dchanges[ext][name] = []
         filesums[ext] += filesum
         disksums[ext] += disksum
