@@ -205,6 +205,7 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
 mapping = """
 jenkinsfile= */Jenkinsfile
 jenkinsfile= */Jenkinsfile_*
+jenkinsfile= */Error_Jenkinsfile
 makefile= */Makefile
 makefile= */Makefile*
 readme= */README*
@@ -214,8 +215,10 @@ dot.suo = */.suo
 dot.fpg = */.fpg
 dot.pylintrc = */.pylintrc
 dot.gitignore = */.gitignore
-simtask.exe = */simtaskmanager
-simtask.exe = */simtaskmanager_debug
+exe.simtask = */simtaskmanager
+exe.simtask = */simtaskmanager_debug
+exe.datasync = */DataSync
+exe.datasync = */DataSync_debug
 """
 
 def map_ext(name, ext):
