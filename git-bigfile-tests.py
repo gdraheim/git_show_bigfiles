@@ -91,17 +91,21 @@ def output3(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str]
         out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
-def gentext(size: int) -> str:
+def gentext(size: int, start="") -> str:
     random.seed(1234567891234567890)
-    result = StringIO()
-    old1 = ''
-    old2 = ''
+    result = StringIO(start)
+    old = ''
+    pre = ''
     for i in range(size):
         while True:
-            x = random.choice("       abcdefghijklmnopqrstuvwxyz\n")
-            if x == old1 or x == old2: continue
-            old1 = old2
-            old2 = x
+            if old in " aeiouy":
+                x = random.choice("bcdfghjklmnpqrstvwxz")
+                if x == old or x == pre: 
+                    x = '\n'
+            else:
+               x = random.choice(" aeiouy")
+            pre = old
+            old = x
             break
         result.write(x)
     return cast(str, result.getvalue())
@@ -224,8 +228,10 @@ class GitBigfileTest(unittest.TestCase):
     def test_103_bigfile(self) -> None:
         testdir = self.mk_testdir()
         sh____(F"git init -b main {testdir}")
-        text_file(F"{testdir}/a.txt", gentext(20*KB))
-        zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
+        text = gentext(20*KB)
+        logg.info("TEXT %s", text)
+        text_file(F"{testdir}/a.txt", text)
+        zip_file(F"{testdir}/b.zip", { "b.txt": text})
         sh____(F"cd {testdir} && git add *.*")
         sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && git --no-pager diff --name-only")
