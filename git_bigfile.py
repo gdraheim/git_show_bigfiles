@@ -126,14 +126,17 @@ def splits4(inp: str) ->  Iterator[Tuple[str, str, str]]:
     for a, b, c, d in split4(inp.splitlines()):
         yield a, b, c, d
 
-def get_nosizes() -> str:
-    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosizes())
-def each_nosizes() -> Iterator[Tuple[str, str, int, int, str]]:
+def get_nosizes(exts: Optional[str] = None) -> str:
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosizes(exts=exts))
+def each_nosizes(exts: Optional[str] = None) -> Iterator[Tuple[str, str, int, int, str]]:
+    extlist = exts.split(",") if exts is not None else EXT.split(",")
     for rev, type, disk, size, name in each_sizes():
         if type in ["tree"]: continue
         nam, ext = map_splitext(name)
-        if ext == EXT:
-            yield rev, type, disk, size, name    
+        for pat in extlist:
+            if fnmatch(ext, pat):
+                yield rev, type, disk, size, name    
+                break
 
 def get_rev_list() -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_sizes())
@@ -165,14 +168,17 @@ def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
          type = types[rev]
          yield rev, type, disk, size, name
 
-def get_nosumsizes() -> str:
-    sumsizes = sorted(list(each_nosumsizes4()), key=lambda x: x[0])
+def get_nosumsizes(exts: Optional[str] = None) -> str:
+    sumsizes = sorted(list(each_nosumsizes4(exts=exts)), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
-def each_nosumsizes4() -> Iterator[Tuple[int, int, str]]:
+def each_nosumsizes4(exts: Optional[str] = None) -> Iterator[Tuple[int, int, str]]:
+    extlist = exts.split(",") if exts is not None else EXT.split(",")
     for sum, disk, changes, name, parts in each_sumsizes5():
         nam, ext = map_splitext(name)
-        if fnmatch(ext, EXT):
-            yield sum, disk, changes, name
+        for pat in extlist:
+            if fnmatch(ext, pat):
+                yield sum, disk, changes, name
+                break
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
@@ -277,8 +283,39 @@ def each_noext() -> Iterator[str]:
             yield name
 
 def get_help():
-    return __doc__
+    text = ""
+    for line in open(__file__):
+        if line.strip().startswith("elif cmd in"):
+            pre, txt = line.split("elif cmd in", 1)
+            text += "   " + txt.rstrip().replace("#", "") + "\n"
+    return text + __doc__
 
+def run(cmd: str, args: List[str]) -> None:
+    name = cmd.replace("-", "_")
+    if F"run_{name}" in globals():
+        methodcall = globals()[F"run_{name}"]
+        methodcall()
+    elif cmd in ["help"]: # this help screen
+       print(get_help())
+    elif cmd in ["sizes"]: # show sizes of all revs
+       print(get_sizes())
+    elif cmd in ["nosizes"]: # show sizes of all revs with -E '' (default no extension)
+       print(get_nosizes())
+    elif cmd in ["sumsizes"]: # show sizes of all revs summarized per file history
+       print(get_sumsizes())
+    elif cmd in ["nosumsizes"]: # show sizes of all revs with -E '' summarized per file history
+       print(get_nosumsizes())
+    elif cmd in ["extsizes"]: # show sizes of all revs summarized per file extension and history
+       print(get_extsizes())
+    elif cmd in ["noext"]: # show files with no extension as show on 'extsizes'
+       print(get_noext())
+    elif "." in cmd and cmd[0] == "*":
+       print(get_nosizes(exts = cmd[1:]))
+    elif "." in cmd:
+       print(get_nosumsizes(exts = cmd))
+    elif F"run_{name}" in globals():
+        methodcall = globals()[F"run_{name}"]
+        print(methodcall())
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -318,18 +355,9 @@ if __name__ == "__main__":
         logg.info("log diverted to %s", opt.logfile)
     #
     logg.debug("args %s", args)
-    for arg in args:
-        name = arg.replace("-", "_")
-        for method in sorted(globals()):
-            if "_" not in method or method.startswith("_") or method.endswith("_"):
-                continue
-            logg.debug("method %s", method)
-            methodcall = globals()[method]
-            if not callable(methodcall):
-                continue
-            if fnmatch(method, F"run_{name}"):
-                methodcall()
-            elif fnmatch(method, F"get_{name}"):
-                print(methodcall())
+    if args:
+        run(args[0], args[1:])
+    else:
+        print(get_help())
 
 
