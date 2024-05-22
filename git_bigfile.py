@@ -10,12 +10,9 @@ import os, sys
 import re
 import subprocess
 import zipfile
-import inspect
 import unittest
 from collections import OrderedDict
 from fnmatch import fnmatchcase as fnmatch
-import shutil
-import random
 import logging
 logg = logging.getLogger("CHECK")
 
@@ -46,18 +43,6 @@ def decodes(text: Union[bytes, str]) -> str:
         except:
             return text.decode("latin-1")
     return text
-def sh____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
-    if isinstance(cmd, basestring):
-        logg.info(": %s", cmd)
-    else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    return subprocess.check_call(cmd, cwd=cwd, shell=shell)
-def sx____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
-    if isinstance(cmd, basestring):
-        logg.info(": %s", cmd)
-    else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    return subprocess.call(cmd, cwd=cwd, shell=shell)
 def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> str:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
@@ -95,61 +80,6 @@ def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool =
         out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
-def gentext(size: int, start="") -> str:
-    random.seed(1234567891234567890)
-    result = StringIO(start)
-    old = ''
-    pre = ''
-    for i in range(size):
-        while True:
-            if old in " aeiouy":
-                x = random.choice("bcdfghjklmnpqrstvwxz")
-                if x == old or x == pre: 
-                    x = '\n'
-            else:
-               x = random.choice(" aeiouy")
-            pre = old
-            old = x
-            break
-        result.write(x)
-    return cast(str, result.getvalue())
-
-def text_file(filename: str, content: str) -> None:
-    filedir = os.path.dirname(filename)
-    if not os.path.isdir(filedir):
-        os.makedirs(filedir)
-    with open(filename, "w") as f:
-        if content.startswith("\n"):
-            x = re.match("(?s)\n( *)", content)
-            assert x is not None
-            indent = x.group(1)
-            for line in content[1:].split("\n"):
-                if line.startswith(indent):
-                    line = line[len(indent):]
-                f.write(line + "\n")
-        else:
-            f.write(content)
-        f.close()
-
-def zip_file(filename: str, content: Dict[str, str]) -> None:
-    filedir = os.path.dirname(filename)
-    if not os.path.isdir(filedir):
-        os.makedirs(filedir)
-    with zipfile.ZipFile(filename, "w") as f:
-        for name, data in content.items():
-            if data.startswith("\n"):
-                text = ""
-                x = re.match("(?s)\n( *)", content)
-                assert x is not None
-                indent = x.group(1)
-                for line in data[1:].split("\n"):
-                    if line.startswith(indent):
-                         line = line[len(indent):]
-                    text += line + "\n"
-                f.writestr(name, text)
-            else:
-                f.writestr(name, data)
-
 def split2(inp: Iterable[str]) -> Iterator[Tuple[str, str]]:
     for line in inp:
         if " " in line:
@@ -167,13 +97,6 @@ def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
 def splits3(inp: str) ->  Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
-
-def get_caller_name() -> str:
-    frame = inspect.currentframe().f_back.f_back  # type: ignore[union-attr]
-    return frame.f_code.co_name  # type: ignore[union-attr]
-def get_caller_caller_name() -> str:
-    frame = inspect.currentframe().f_back.f_back.f_back  # type: ignore[union-attr]
-    return frame.f_code.co_name  # type: ignore[union-attr]
 
 def get_rev_list() -> str:
     return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sizes())
@@ -202,8 +125,24 @@ def each_sizes() -> Iterator[Tuple[str, str, int, str]]:
          type = types[rev]
          yield rev, type, size, name
 
+def get_sumsizes() -> str:
+    return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sumsizes())
+def each_sumsizes() -> Iterator[Tuple[int, int, str, str]]:
+    sums: Dict[str, int] = {}
+    part: Dict[str, List[int]] = {}
+    for rev, type, size, name in each_sizes():
+        if not name: continue
+        if name not in sums:
+             sums[name] = 0
+             part[name] = []
+        part[name] += [ size ]
+        sums[name] += size
+    for name, sum in sums.items():
+        yield sum, len(part[name]), name, "|" + "+".join([str(item) for item in part[name]])
+
 def get_help():
     return __doc__
+
 
 if __name__ == "__main__":
     from optparse import OptionParser
