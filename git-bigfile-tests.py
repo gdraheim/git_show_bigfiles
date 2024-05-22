@@ -42,52 +42,52 @@ def decodes(text: Union[bytes, str]) -> str:
         except:
             return text.decode("latin-1")
     return text
-def sh____(cmd: Union[str, List[str]], shell: bool = True) -> int:
+def sh____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    return subprocess.check_call(cmd, shell=shell)
-def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
+    return subprocess.check_call(cmd, cwd=cwd, shell=shell)
+def sx____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    return subprocess.call(cmd, shell=shell)
-def output(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str] = None) -> str:
+    return subprocess.call(cmd, cwd=cwd, shell=shell)
+def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> str:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if input is not None:
-        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(input.encode("utf-8"))
     else:
-        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str] = None) -> Tuple[str, int]:
+def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> Tuple[str, int]:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if input is not None:
-        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(input.encode("utf-8"))
     else:
-        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str] = None) -> Tuple[str, str, int]:
+def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> Tuple[str, str, int]:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if input is not None:
-        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(input.encode("utf-8"))
     else:
-        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
