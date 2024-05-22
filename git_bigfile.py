@@ -40,6 +40,8 @@ def str_(obj: Any, no: str = '-') -> str:
         return no
     if isinstance(obj, int) and PRETTY:
        text = str(obj)
+       if len(text) > 9:
+          return text[:-9] + "_" + text[-9:-6] + "_" + text[-6:-3] + "_" + text[-3:]
        if len(text) > 6:
           return text[:-6] + "_" + text[-6:-3] + "_" + text[-3:]
        if len(text) > 3:
