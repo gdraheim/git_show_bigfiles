@@ -214,6 +214,8 @@ dot.suo = */.suo
 dot.fpg = */.fpg
 dot.pylintrc = */.pylintrc
 dot.gitignore = */.gitignore
+simtask.exe = */simtaskmanager
+simtask.exe = */simtaskmanager_debug
 """
 
 def map_ext(name, ext):
