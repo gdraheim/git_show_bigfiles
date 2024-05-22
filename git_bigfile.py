@@ -7,6 +7,7 @@ __version__ = "0.1.0"
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
 
 import os, sys
+import os.path as fs
 import re
 import subprocess
 import zipfile
@@ -157,6 +158,32 @@ def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
         dchanges[name] += [ disk ]
     for name, disksum in disksums.items():
         yield disksum, filesums[name], len(dchanges[name]), name, "|" + "+".join([str(item) for item in dchanges[name]])
+
+def get_extsizes() -> str:
+    sumsizes = sorted(list(each_extsizes4()), key=lambda x: x[0])
+    return "\n".join(" ".join([str(elem) for elem in item]) for item in sumsizes)
+def each_extsizes4() -> Iterator[Tuple[int, int, str]]:
+    for sum, disk, changes, ext, names in each_extsizes5():
+        yield sum, disk, changes, ext
+def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
+    disksums: Dict[str, int] = {}
+    filesums: Dict[str, int] = {}
+    dchanges: Dict[str, Dict[str, int]] = {}
+    for disksum, filesum, changes, name, diskchanges in each_sumsizes5():
+        if not name: continue
+        filename = fs.basename(name)
+        nam, ext = fs.splitext(filename)
+        if ext not in filesums:
+             disksums[ext] = 0
+             filesums[ext] = 0
+             dchanges[ext] = {}
+        if filename not in dchanges[ext]:
+             dchanges[ext][name] = []
+        filesums[ext] += filesum
+        disksums[ext] += disksum
+        dchanges[ext][name] += [ disksum ]
+    for ext, disksum in disksums.items():
+        yield disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext])
 
 def get_help():
     return __doc__
