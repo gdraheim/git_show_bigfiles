@@ -126,7 +126,8 @@ def each_sizes() -> Iterator[Tuple[str, str, int, str]]:
          yield rev, type, size, name
 
 def get_sumsizes() -> str:
-    return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sumsizes())
+    sumsizes = sorted(list(each_sumsizes()), key=lambda x: x[0])
+    return "\n".join(" ".join([str(elem) for elem in item]) for item in sumsizes)
 def each_sumsizes() -> Iterator[Tuple[int, int, str, str]]:
     sums: Dict[str, int] = {}
     part: Dict[str, List[int]] = {}
