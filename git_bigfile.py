@@ -31,6 +31,7 @@ GIT = "git"
 BRANCH = "main"
 PRETTY = False
 KEEP = False
+EXT = ""
 KB = 1024
 MB = KB * KB
 
@@ -123,6 +124,15 @@ def splits4(inp: str) ->  Iterator[Tuple[str, str, str]]:
     for a, b, c, d in split4(inp.splitlines()):
         yield a, b, c, d
 
+def get_nosizes() -> str:
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosizes())
+def each_nosizes() -> Iterator[Tuple[str, str, int, int, str]]:
+    for rev, type, disk, size, name in each_sizes():
+        if type in ["tree"]: continue
+        nam, ext = map_splitext(name)
+        if ext == EXT:
+            yield rev, type, disk, size, name    
+
 def get_rev_list() -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_sizes())
 def get_sizes() -> str:
@@ -159,7 +169,7 @@ def get_nosumsizes() -> str:
 def each_nosumsizes4() -> Iterator[Tuple[int, int, str]]:
     for sum, disk, changes, name, parts in each_sumsizes5():
         nam, ext = map_splitext(name)
-        if not ext:
+        if ext == EXT:
             yield sum, disk, changes, name
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
@@ -256,7 +266,7 @@ def each_noext() -> Iterator[str]:
      noext = []
      for disksum, filesum, changes, ext, names in each_extsizes5():
         logg.info("ext '%s'", ext)
-        if not ext:
+        if ext == EXT:
             noext = names.split("|")
             logg.debug("found %s noext", len(noext))
      for name in noext:
@@ -284,6 +294,8 @@ if __name__ == "__main__":
                   help="additionally save the output log to a file [%default]")
     _o.add_option("-P", "--pretty", action="store_true", default=False,
                   help="enhanced value results [%default]")
+    _o.add_option("-E", "--ext", metavar="EXT", default=EXT,
+                  help="show nolist for this ext [%default]")
     opt, args = _o.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
@@ -291,6 +303,7 @@ if __name__ == "__main__":
     BRANCH = opt.branch
     REPO = opt.repo or None
     PRETTY = opt.pretty
+    EXT = opt.ext
     logg.debug("BRANCH %s REPO %s", BRANCH, REPO)
     #
     logfile = None
