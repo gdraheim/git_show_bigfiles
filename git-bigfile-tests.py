@@ -54,29 +54,41 @@ def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, shell=shell)
-def output(cmd: Union[str, List[str]], shell: bool = True) -> str:
+def output(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str] = None) -> str:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
-    out, err = run.communicate()
+    if input is not None:
+        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        out, err = run.communicate(input.encode("utf-8"))
+    else:
+        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+        out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, int]:
+def output2(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str] = None) -> Tuple[str, int]:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
-    out, err = run.communicate()
+    if input is not None:
+        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        out, err = run.communicate(input.encode("utf-8"))
+    else:
+        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+        out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, int]:
+def output3(cmd: Union[str, List[str]], shell: bool = True, input: Optional[str] = None) -> Tuple[str, str, int]:
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = run.communicate()
+    if input is not None:
+        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        out, err = run.communicate(input.encode("utf-8"))
+    else:
+        run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
 def gentext(size: int) -> str:
@@ -139,6 +151,15 @@ def splits2(inp: str) ->  Iterator[Tuple[str, str]]:
     for a, b in split2(inp.splitlines()):
         yield a, b
 
+def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
+    for line in inp:
+        if " " in line:
+            a, b, c = line.split(" ", 2)
+            yield a, b, c.strip()
+def splits3(inp: str) ->  Iterator[Tuple[str, str, str]]:
+    for a, b, c in split3(inp.splitlines()):
+        yield a, b, c
+
 def get_caller_name() -> str:
     frame = inspect.currentframe().f_back.f_back  # type: ignore[union-attr]
     return frame.f_code.co_name  # type: ignore[union-attr]
@@ -199,6 +220,34 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(20 * KB, 20480)
         self.assertEqual(sizes["a.txt"], 20480)
         self.assertEqual(sizes["b.zip"], 20588)
+        if not KEEP: self.rm_testdir()
+    def test_103_bigfile(self) -> None:
+        testdir = self.mk_testdir()
+        sh____(F"git init -b main {testdir}")
+        text_file(F"{testdir}/a.txt", gentext(20*KB))
+        zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
+        sh____(F"cd {testdir} && git add *.*")
+        sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
+        sh____(F"cd {testdir} && git --no-pager diff --name-only")
+        out = output(F"cd {testdir} && git rev-list main --objects")
+        revs = {}
+        sizes = {}
+        types = {}
+        for rev, name in splits2(out):
+            logg.debug("FOUND %s %s", rev, name)
+            if name in ("a.txt", "b.zip"):
+                revs[rev] = name
+        siz = output(F"cd {testdir} && git cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
+                     input="\n".join(revs.keys()))
+        for siz, typ, rev in splits3(siz):
+            name = revs[rev]
+            sizes[name] = int(siz)
+            types[name] = typ
+        self.assertEqual(20 * KB, 20480)
+        self.assertEqual(sizes["a.txt"], 20480)
+        self.assertEqual(sizes["b.zip"], 20588)
+        self.assertEqual(types["a.txt"], "blob")
+        self.assertEqual(types["b.zip"], "blob")
         if not KEEP: self.rm_testdir()
 
 if __name__ == "__main__":
