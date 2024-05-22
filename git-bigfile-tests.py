@@ -1,0 +1,248 @@
+#! /usr/bin/env python3
+""" test cases for bigfile detection """
+
+__copyright__ = "(C) Guido Draheim, all rights reserved"""
+__version__ = "0.1.0"
+
+from typing import Union, Optional, Tuple, List, Dict, Iterator, cast
+
+import os, sys
+import re
+import subprocess
+import zipfile
+import inspect
+import unittest
+from fnmatch import fnmatchcase as fnmatch
+import shutil
+import random
+import logging
+logg = logging.getLogger("TESTING")
+
+if sys.version[0] == '3':
+    basestring = str
+    xrange = range
+
+try:
+    from cStringIO import StringIO  # type: ignore[import, attr-defined]
+except ImportError:
+    from io import StringIO  # Python3
+
+KEEP = False
+KB = 1024
+MB = KB * KB
+
+def decodes(text: Union[bytes, str]) -> str:
+    if text is None: return None
+    if isinstance(text, bytes):
+        encoded = sys.getdefaultencoding()
+        if encoded in ["ascii"]:
+            encoded = "utf-8"
+        try:
+            return text.decode(encoded)
+        except:
+            return text.decode("latin-1")
+    return text
+def sh____(cmd: Union[str, List[str]], shell: bool = True) -> int:
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    return subprocess.check_call(cmd, shell=shell)
+def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    return subprocess.call(cmd, shell=shell)
+def output(cmd: Union[str, List[str]], shell: bool = True) -> str:
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    out, err = run.communicate()
+    return decodes(out)
+def output2(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, int]:
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    out, err = run.communicate()
+    return decodes(out), run.returncode
+def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, int]:
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = run.communicate()
+    return decodes(out), decodes(err), run.returncode
+
+def gentext(size: int) -> str:
+    random.seed(1234567891234567890)
+    result = StringIO()
+    old1 = ''
+    old2 = ''
+    for i in range(size):
+        while True:
+            x = random.choice("       abcdefghijklmnopqrstuvwxyz\n")
+            if x == old1 or x == old2: continue
+            old1 = old2
+            old2 = x
+            break
+        result.write(x)
+    return cast(str, result.getvalue())
+
+def text_file(filename: str, content: str) -> None:
+    filedir = os.path.dirname(filename)
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
+    with open(filename, "w") as f:
+        if content.startswith("\n"):
+            x = re.match("(?s)\n( *)", content)
+            assert x is not None
+            indent = x.group(1)
+            for line in content[1:].split("\n"):
+                if line.startswith(indent):
+                    line = line[len(indent):]
+                f.write(line + "\n")
+        else:
+            f.write(content)
+        f.close()
+
+def zip_file(filename: str, content: Dict[str, str]) -> None:
+    filedir = os.path.dirname(filename)
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
+    with zipfile.ZipFile(filename, "w") as f:
+        for name, data in content.items():
+            if data.startswith("\n"):
+                text = ""
+                x = re.match("(?s)\n( *)", content)
+                assert x is not None
+                indent = x.group(1)
+                for line in data[1:].split("\n"):
+                    if line.startswith(indent):
+                         line = line[len(indent):]
+                    text += line + "\n"
+                f.writestr(name, text)
+            else:
+                f.writestr(name, data)
+
+def get_caller_name() -> str:
+    frame = inspect.currentframe().f_back.f_back  # type: ignore[union-attr]
+    return frame.f_code.co_name  # type: ignore[union-attr]
+def get_caller_caller_name() -> str:
+    frame = inspect.currentframe().f_back.f_back.f_back  # type: ignore[union-attr]
+    return frame.f_code.co_name  # type: ignore[union-attr]
+
+class GitBigfileTest(unittest.TestCase):
+    def caller_testname(self) -> str:
+        name = get_caller_caller_name()
+        x1 = name.find("_")
+        if x1 < 0: return name
+        x2 = name.find("_", x1 + 1)
+        if x2 < 0: return name
+        return name[:x2]
+    def testname(self, suffix: Optional[str] = None) -> str:
+        name = self.caller_testname()
+        if suffix:
+            return name + "_" + suffix
+        return name
+    def mk_testdir(self, testname: Optional[str] = None) -> str:
+        testname = testname or self.caller_testname()
+        newdir = "tmp/tmp." + testname
+        if os.path.isdir(newdir):
+            shutil.rmtree(newdir)
+        os.makedirs(newdir)
+        return newdir
+    def rm_testdir(self, testname: Optional[str] = None) -> str:
+        testname = testname or self.caller_testname()
+        newdir = "tmp/tmp." + testname
+        if os.path.isdir(newdir):
+            shutil.rmtree(newdir)
+        return newdir
+    def test_101_simple(self) -> None:
+        testdir = self.mk_testdir()
+        sh____(F"git init -b main {testdir}")
+        text_file(F"{testdir}/a.txt", "A File")
+        zip_file(F"{testdir}/b.zip", { "b.txt": "B File"})
+        sh____(F"cd {testdir} && git add *.*")
+        sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
+        sh____(F"cd {testdir} && git --no-pager show --name-only")
+        if not KEEP: self.rm_testdir()
+    def test_102_bigfile(self) -> None:
+        testdir = self.mk_testdir()
+        sh____(F"git init -b main {testdir}")
+        text_file(F"{testdir}/a.txt", gentext(20*KB))
+        zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
+        sh____(F"cd {testdir} && git add *.*")
+        sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
+        sh____(F"cd {testdir} && git --no-pager diff --name-only")
+        if not KEEP: self.rm_testdir()
+
+if __name__ == "__main__":
+    from optparse import OptionParser
+    _o = OptionParser("%prog [options] test*",
+                      epilog=__doc__.strip().split("\n")[0])
+    _o.add_option("-v", "--verbose", action="count", default=0,
+                  help="increase logging level [%default]")
+    _o.add_option("-k", "--keep", action="count", default=0,
+                  help="keep docker build container [%default]")
+    _o.add_option("-l", "--logfile", metavar="FILE", default="",
+                  help="additionally save the output log to a file [%default]")
+    _o.add_option("--failfast", action="store_true", default=False,
+                  help="Stop the test run on the first error or failure. [%default]")
+    _o.add_option("--xmlresults", metavar="FILE", default=None,
+                  help="capture results as a junit xml file [%default]")
+    opt, args = _o.parse_args()
+    logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
+    #
+    KEEP = opt.keep
+    #
+    logfile = None
+    if opt.logfile:
+        if os.path.exists(opt.logfile):
+            os.remove(opt.logfile)
+        logfile = logging.FileHandler(opt.logfile)
+        logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
+        logging.getLogger().addHandler(logfile)
+        logg.info("log diverted to %s", opt.logfile)
+    xmlresults = None
+    if opt.xmlresults:
+        if os.path.exists(opt.xmlresults):
+            os.remove(opt.xmlresults)
+        xmlresults = open(opt.xmlresults, "w")
+        logg.info("xml results into %s", opt.xmlresults)
+    #
+    # unittest.main()
+    suite = unittest.TestSuite()
+    if not args: args = ["test_*"]
+    for arg in args:
+        for classname in sorted(globals()):
+            if not classname.endswith("Test"):
+                continue
+            testclass = globals()[classname]
+            for method in sorted(dir(testclass)):
+                if "*" not in arg: arg += "*"
+                if len(arg) > 2 and arg[1] == "_":
+                    arg = "test" + arg[1:]
+                if fnmatch(method, arg):
+                    suite.addTest(testclass(method))
+    # select runner
+    xmlresults = None
+    if opt.xmlresults:
+        if os.path.exists(opt.xmlresults):
+            os.remove(opt.xmlresults)
+        xmlresults = open(opt.xmlresults, "wb")  # type: ignore[assignment]
+        logg.info("xml results into %s", opt.xmlresults)
+    if xmlresults:
+        import xmlrunner  # type: ignore
+        Runner = xmlrunner.XMLTestRunner
+        result = Runner(xmlresults).run(suite)
+    else:
+        Runner = unittest.TextTestRunner
+        result = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
+    if not result.wasSuccessful():
+        sys.exit(1)
