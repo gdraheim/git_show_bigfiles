@@ -232,10 +232,10 @@ class GitBigfileTest(unittest.TestCase):
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
         zip_file(F"{testdir}/b.zip", { "b.txt": text})
-        sh____(F"cd {testdir} && git add *.*")
-        sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
-        sh____(F"cd {testdir} && git --no-pager diff --name-only")
-        out = output(F"cd {testdir} && git rev-list main --objects")
+        sh____(F"git add *.*", testdir)
+        sh____(F"git --no-pager commit -m 'initial'", testdir)
+        sh____(F"git --no-pager diff --name-only", testdir)
+        out = output(F"git rev-list main --objects", testdir)
         revs = {}
         sizes = {}
         types = {}
@@ -243,8 +243,8 @@ class GitBigfileTest(unittest.TestCase):
             logg.debug("FOUND %s %s", rev, name)
             if name in ("a.txt", "b.zip"):
                 revs[rev] = name
-        siz = output(F"cd {testdir} && git cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
-                     input="\n".join(revs.keys()))
+        siz = output(F"git cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
+                     testdir, input="\n".join(revs.keys()))
         for siz, typ, rev in splits3(siz):
             name = revs[rev]
             sizes[name] = int(siz)
