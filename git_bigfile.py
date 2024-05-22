@@ -160,11 +160,11 @@ def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
         yield disksum, filesums[name], len(dchanges[name]), name, "|" + "+".join([str(item) for item in dchanges[name]])
 
 def get_extsizes() -> str:
-    sumsizes = sorted(list(each_extsizes4()), key=lambda x: x[0])
+    sumsizes = sorted(list(each_extsizes5_files()), key=lambda x: x[0])
     return "\n".join(" ".join([str(elem) for elem in item]) for item in sumsizes)
-def each_extsizes4() -> Iterator[Tuple[int, int, str]]:
+def each_extsizes5_files() -> Iterator[Tuple[int, int, str]]:
     for sum, disk, changes, ext, names in each_extsizes5():
-        yield sum, disk, changes, ext
+        yield sum, disk, changes, ext, "%s/files" % len(names)
 def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
