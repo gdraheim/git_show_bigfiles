@@ -171,7 +171,7 @@ def get_nosumsizes() -> str:
 def each_nosumsizes4() -> Iterator[Tuple[int, int, str]]:
     for sum, disk, changes, name, parts in each_sumsizes5():
         nam, ext = map_splitext(name)
-        if ext == EXT:
+        if fnmatch(ext, EXT):
             yield sum, disk, changes, name
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
@@ -268,7 +268,7 @@ def each_noext() -> Iterator[str]:
      noext = []
      for disksum, filesum, changes, ext, names in each_extsizes5():
         logg.info("ext '%s'", ext)
-        if ext == EXT:
+        if fnmatch(ext, EXT):
             noext = names.split("|")
             logg.debug("found %s noext", len(noext))
      for name in noext:
