@@ -174,6 +174,7 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
         if not name: continue
         filename = fs.basename(name)
         nam, ext = fs.splitext(filename)
+        ext = map_ext(name, ext)
         if ext not in filesums:
              disksums[ext] = 0
              filesums[ext] = 0
@@ -185,6 +186,22 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
         dchanges[ext][name] += [ disksum ]
     for ext, disksum in disksums.items():
         yield disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext])
+
+mapping = """
+jenkinsfile= */Jenkinsfile
+jenkinsfile= */Jenkinsfile_*
+makefile= */Makefile
+makefile= */Makefile*
+"""
+
+def map_ext(name, ext):
+    if not ext:
+        for line in mapping.splitlines():
+            if "=" in line:
+                mapped, pattern = line.split("=", 1)
+                if fnmatch(name.strip(), pattern.strip()):
+                    return mapped.strip()
+    return ext
 
 def get_noext() -> str:
     return "\n".join(list(each_noext()))
