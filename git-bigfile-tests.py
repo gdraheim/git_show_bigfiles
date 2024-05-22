@@ -27,6 +27,8 @@ try:
 except ImportError:
     from io import StringIO  # Python3
 
+GIT = "git"
+BRANCH = "main"
 KEEP = False
 KB = 1024
 MB = KB * KB
@@ -199,22 +201,24 @@ class GitBigfileTest(unittest.TestCase):
         return newdir
     def test_101_simple(self) -> None:
         testdir = self.mk_testdir()
-        sh____(F"git init -b main {testdir}")
+        git, main = GIT, BRANCH
+        sh____(F"{git} init -b {main} {testdir}")
         text_file(F"{testdir}/a.txt", "A File")
         zip_file(F"{testdir}/b.zip", { "b.txt": "B File"})
-        sh____(F"cd {testdir} && git add *.*")
-        sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
-        sh____(F"cd {testdir} && git --no-pager show --name-only")
+        sh____(F"cd {testdir} && {git} add *.*")
+        sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
+        sh____(F"cd {testdir} && {git} --no-pager show --name-only")
         if not KEEP: self.rm_testdir()
     def test_102_bigfile(self) -> None:
         testdir = self.mk_testdir()
-        sh____(F"git init -b main {testdir}")
+        git, main = GIT, BRANCH
+        sh____(F"{git} init -b {main} {testdir}")
         text_file(F"{testdir}/a.txt", gentext(20*KB))
         zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
-        sh____(F"cd {testdir} && git add *.*")
-        sh____(F"cd {testdir} && git --no-pager commit -m 'initial'")
-        sh____(F"cd {testdir} && git --no-pager diff --name-only")
-        out = output(F"cd {testdir} && git rev-list main --objects")
+        sh____(F"cd {testdir} && {git} add *.*")
+        sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
+        sh____(F"cd {testdir} && {git} --no-pager diff --name-only")
+        out = output(F"cd {testdir} && {git} rev-list {main} --objects")
         sizes = {}
         for rev, name in splits2(out):
             logg.debug("FOUND %s %s", rev, name)
@@ -227,15 +231,16 @@ class GitBigfileTest(unittest.TestCase):
         if not KEEP: self.rm_testdir()
     def test_103_bigfile(self) -> None:
         testdir = self.mk_testdir()
-        sh____(F"git init -b main {testdir}")
+        git, main = GIT, BRANCH
+        sh____(F"{git} init -b {main} {testdir}")
         text = gentext(20*KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
         zip_file(F"{testdir}/b.zip", { "b.txt": text})
-        sh____(F"git add *.*", testdir)
-        sh____(F"git --no-pager commit -m 'initial'", testdir)
-        sh____(F"git --no-pager diff --name-only", testdir)
-        out = output(F"git rev-list main --objects", testdir)
+        sh____(F"{git} add *.*", testdir)
+        sh____(F"{git} --no-pager commit -m 'initial'", testdir)
+        sh____(F"{git} --no-pager diff --name-only", testdir)
+        out = output(F"{git} rev-list {main} --objects", testdir)
         revs = {}
         sizes = {}
         types = {}
@@ -243,7 +248,7 @@ class GitBigfileTest(unittest.TestCase):
             logg.debug("FOUND %s %s", rev, name)
             if name in ("a.txt", "b.zip"):
                 revs[rev] = name
-        siz = output(F"git cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
+        siz = output(F"{git} cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
                      testdir, input="\n".join(revs.keys()))
         for siz, typ, rev in splits3(siz):
             name = revs[rev]
@@ -262,6 +267,10 @@ if __name__ == "__main__":
                       epilog=__doc__.strip().split("\n")[0])
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="increase logging level [%default]")
+    _o.add_option("-g", "--git", metavar="EXE", default=GIT,
+                  help="use different git client [%default]")
+    _o.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
+                  help="use different def branch [%default]")
     _o.add_option("-k", "--keep", action="count", default=0,
                   help="keep docker build container [%default]")
     _o.add_option("-l", "--logfile", metavar="FILE", default="",
@@ -274,6 +283,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     KEEP = opt.keep
+    GIT = opt.git
+    BRANCH = opt.branch
     #
     logfile = None
     if opt.logfile:
