@@ -97,15 +97,24 @@ def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
 def splits3(inp: str) ->  Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
+def split4(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
+    for line in inp:
+        if " " in line:
+            a, b, c, d = line.split(" ", 3)
+            yield a, b, c, d.strip()
+def splits4(inp: str) ->  Iterator[Tuple[str, str, str]]:
+    for a, b, c, d in split4(inp.splitlines()):
+        yield a, b, c, d
 
 def get_rev_list() -> str:
     return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sizes())
 def get_sizes() -> str:
     return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sizes())
-def each_sizes() -> Iterator[Tuple[str, str, int, str]]:
+def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
     git, main = GIT, BRANCH
     out = output(F"{git} rev-list {main} --objects", REPO)
     revs = OrderedDict()
+    disks = {}
     sizes = {}
     types = {}
     for rev, name in splits2(out):
@@ -113,33 +122,41 @@ def each_sizes() -> Iterator[Tuple[str, str, int, str]]:
          revs[rev] = name
     objectnames="\n".join(revs.keys()) + "\n"
     logg.debug("objectnames => %s", objectnames)
-    siz = output(F"{git} cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
+    siz = output(F"{git} cat-file --batch-check='%(objectsize) %(objectsize:disk) %(objecttype) %(objectname)'",
                  REPO, input=objectnames)
     logg.debug("cat-file => %s", siz)
-    for siz, typ, rev in splits3(siz):
+    for siz, disk, typ, rev in splits4(siz):
+         disks[rev] = int(disk)
          sizes[rev] = int(siz)
          types[rev] = typ
     for rev in revs:
          name = revs[rev]
+         disk = disks[rev]
          size = sizes[rev]
          type = types[rev]
-         yield rev, type, size, name
+         yield rev, type, disk, size, name
 
 def get_sumsizes() -> str:
-    sumsizes = sorted(list(each_sumsizes()), key=lambda x: x[0])
+    sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
     return "\n".join(" ".join([str(elem) for elem in item]) for item in sumsizes)
-def each_sumsizes() -> Iterator[Tuple[int, int, str, str]]:
-    sums: Dict[str, int] = {}
-    part: Dict[str, List[int]] = {}
-    for rev, type, size, name in each_sizes():
+def each_sumsizes4() -> Iterator[Tuple[int, int, str]]:
+    for sum, disk, changes, name, parts in each_sumsizes5():
+        yield sum, disk, changes, name
+def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
+    disksums: Dict[str, int] = {}
+    filesums: Dict[str, int] = {}
+    dchanges: Dict[str, List[int]] = {}
+    for rev, type, disk, size, name in each_sizes():
         if not name: continue
-        if name not in sums:
-             sums[name] = 0
-             part[name] = []
-        part[name] += [ size ]
-        sums[name] += size
-    for name, sum in sums.items():
-        yield sum, len(part[name]), name, "|" + "+".join([str(item) for item in part[name]])
+        if name not in filesums:
+             disksums[name] = 0
+             filesums[name] = 0
+             dchanges[name] = []
+        filesums[name] += size
+        disksums[name] += disk
+        dchanges[name] += [ disk ]
+    for name, disksum in disksums.items():
+        yield disksum, filesums[name], len(dchanges[name]), name, "|" + "+".join([str(item) for item in dchanges[name]])
 
 def get_help():
     return __doc__
