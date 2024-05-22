@@ -4,7 +4,7 @@
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
 __version__ = "0.1.0"
 
-from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
+from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast
 
 import os, sys
 import os.path as fs
@@ -32,6 +32,14 @@ BRANCH = "main"
 KEEP = False
 KB = 1024
 MB = KB * KB
+
+def str_(obj: Any, no: str = '-') -> str:
+    if not obj:
+        return no
+    text = str(obj)
+    if not text:
+        return no
+    return text
 
 def decodes(text: Union[bytes, str]) -> str:
     if text is None: return None
@@ -108,9 +116,9 @@ def splits4(inp: str) ->  Iterator[Tuple[str, str, str]]:
         yield a, b, c, d
 
 def get_rev_list() -> str:
-    return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sizes())
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_sizes())
 def get_sizes() -> str:
-    return "\n".join(" ".join([str(elem) for elem in item]) for item in each_sizes())
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_sizes())
 def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
     git, main = GIT, BRANCH
     out = output(F"{git} rev-list {main} --objects", REPO)
@@ -139,7 +147,7 @@ def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
 
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
-    return "\n".join(" ".join([str(elem) for elem in item]) for item in sumsizes)
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
 def each_sumsizes4() -> Iterator[Tuple[int, int, str]]:
     for sum, disk, changes, name, parts in each_sumsizes5():
         yield sum, disk, changes, name
@@ -162,7 +170,7 @@ def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
 
 def get_extsizes() -> str:
     sumsizes = sorted(list(each_extsizes5_files()), key=lambda x: x[0])
-    return "\n".join(" ".join([str(elem) for elem in item]) for item in sumsizes)
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
 def each_extsizes5_files() -> Iterator[Tuple[int, int, str]]:
     for sum, disk, changes, ext, names in each_extsizes5():
         yield sum, disk, changes, ext, "%s/files" % len(names)
@@ -194,6 +202,8 @@ makefile= */Makefile
 makefile= */Makefile*
 readme= */README*
 license= */LICENSE*
+license= */COPYING*
+dot.suo = */.suo
 dot.fpg = */.fpg
 dot.pylintrc = */.pylintrc
 dot.gitignore = */.gitignore
