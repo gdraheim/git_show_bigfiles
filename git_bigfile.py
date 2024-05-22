@@ -192,7 +192,11 @@ jenkinsfile= */Jenkinsfile
 jenkinsfile= */Jenkinsfile_*
 makefile= */Makefile
 makefile= */Makefile*
+readme= */README*
+license= */LICENSE*
 dot.fpg = */.fpg
+dot.pylintrc = */.pylintrc
+dot.gitignore = */.gitignore
 """
 
 def map_ext(name, ext):
