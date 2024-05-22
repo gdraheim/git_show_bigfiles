@@ -149,6 +149,7 @@ def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
     dchanges: Dict[str, List[int]] = {}
     for rev, type, disk, size, name in each_sizes():
         if not name: continue
+        if type in ["tree"]: continue
         if name not in filesums:
              disksums[name] = 0
              filesums[name] = 0
