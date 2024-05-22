@@ -145,6 +145,14 @@ def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
          type = types[rev]
          yield rev, type, disk, size, name
 
+def get_nosumsizes() -> str:
+    sumsizes = sorted(list(each_nosumsizes4()), key=lambda x: x[0])
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
+def each_nosumsizes4() -> Iterator[Tuple[int, int, str]]:
+    for sum, disk, changes, name, parts in each_sumsizes5():
+        nam, ext = map_splitext(name)
+        if not ext:
+            yield sum, disk, changes, name
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
@@ -181,8 +189,7 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
     for disksum, filesum, changes, name, diskchanges in each_sumsizes5():
         if not name: continue
         filename = fs.basename(name)
-        nam, ext = fs.splitext(filename)
-        ext = map_ext(name, ext)
+        nam, ext = map_splitext(filename)
         if ext not in filesums:
              disksums[ext] = 0
              filesums[ext] = 0
@@ -221,6 +228,12 @@ def map_ext(name, ext):
                     if fnmatch(name, pattern[2:]):
                         return mapped
     return ext
+
+def map_splitext(name: str) -> Tuple[str, str]:
+    nam, ext = fs.splitext(name)
+    if not ext:
+        ext = map_ext(name, ext)
+    return nam, ext
 
 def get_noext() -> str:
     return "\n".join(list(each_noext()))
