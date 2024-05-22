@@ -222,6 +222,7 @@ license= */COPYING*
 dot.suo = */.suo
 dot.fpg = */.fpg
 dot.project = */.project
+dot.cproject = */.cproject
 dot.pylintrc = */.pylintrc
 dot.gitignore = */.gitignore
 exe.simtask = */simtaskmanager
