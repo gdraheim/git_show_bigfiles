@@ -192,15 +192,20 @@ jenkinsfile= */Jenkinsfile
 jenkinsfile= */Jenkinsfile_*
 makefile= */Makefile
 makefile= */Makefile*
+dot.fpg = */.fpg
 """
 
 def map_ext(name, ext):
     if not ext:
         for line in mapping.splitlines():
             if "=" in line:
-                mapped, pattern = line.split("=", 1)
-                if fnmatch(name.strip(), pattern.strip()):
-                    return mapped.strip()
+                mapped1, pattern1 = line.split("=", 1)
+                mapped, pattern = mapped1.strip(), pattern1.strip()
+                if fnmatch(name, pattern):
+                    return mapped
+                if pattern.startswith("*/") and "/" not in name:
+                    if fnmatch(name, pattern[2:]):
+                        return mapped
     return ext
 
 def get_noext() -> str:
