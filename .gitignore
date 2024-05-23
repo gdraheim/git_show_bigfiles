@@ -1,3 +1,5 @@
 *.tmp
 tmp
 tmp.*
+build
+__pycache___
