@@ -1,0 +1,18 @@
+{
+        "mypy-type-checker.reportingScope": "workspace",
+        "mypy-type-checker.interpreter": [
+                "python3.11"
+        ],
+        "mypy-type-checker.path": [
+                "mypy-3.11"
+        ],
+        "mypy-type-checker.args": [
+                "--strict",
+                "--show-error-codes",
+                "--show-error-context",
+                "--no-warn-unused-ignores",
+                "--ignore-missing-imports",
+                "--exclude=build"
+        ],
+        "python.defaultInterpreterPath": "python3.11"
+}
