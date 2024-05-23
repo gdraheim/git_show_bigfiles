@@ -305,13 +305,13 @@ def each_size5() -> Iterator[HistSize5]:
          revs[rev] = name
     objectnames="\n".join(revs.keys()) + "\n"
     logg.debug("objectnames => %s", objectnames)
-    siz = output(F"{git} cat-file --batch-check='%(objectsize) %(objectsize:disk) %(objecttype) %(objectname)'",
+    siz = output(F"{git} cat-file --batch-check='%(objectsize:disk) %(objectsize) %(objecttype) %(objectname)'",
                  REPO, input=objectnames)
-    logg.debug("cat-file => %s", siz)
-    for siz, disk, typ, rev in splits4(siz):
-         disks[rev] = int(disk)
-         sizes[rev] = int(siz)
-         types[rev] = typ
+    logg.error("cat-file => %s", siz)
+    for disk1, size1, type1, rev in splits4(siz):
+         disks[rev] = int(disk1)
+         sizes[rev] = int(size1)
+         types[rev] = type1
     for rev in revs:
          nam = revs[rev]
          dsk = disks[rev]
@@ -356,13 +356,15 @@ def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
 def each_sumsize4() -> Iterator[SumSize4]:
-    for sum, disk, changes, name, parts in each_sumsize5():
-        yield SumSize4(sum, disk, changes, name)
+    for disk, sum, changes, name, parts in each_sumsize5():
+        logg.error("sum disk %s size %s", disk, sum)
+        yield SumSize4(disk, sum, changes, name)
 def each_sumsize5() -> Iterator[SumSize5]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, List[int]] = {}
     for rev, type, disk, size, name in each_size5():
+        logg.error("disk %s size %s", disk, size)
         if not name: continue
         if type in ["tree"]: continue
         if name not in filesums:
@@ -377,8 +379,8 @@ def each_sumsize5() -> Iterator[SumSize5]:
               "|" + "+".join([str(item) for item in dchanges[name]]))
 
 class ExtSize5(NamedTuple):
-     filesum: int
      disksum: int
+     filesum: int
      changes: int
      ext: str
      files: str
@@ -394,6 +396,7 @@ def each_extsize5() -> Iterator[ExtSize5]:
     dchanges: Dict[str, Dict[str, List[int]]] = {}
     for disksum, filesum, changes, name, diskchanges in each_sumsize5():
         if not name: continue
+        logg.error("sum disk %s size %s", disksum, filesum)
         filename = fs.basename(name)
         nam, ext = map_splitext(filename)
         if ext not in filesums:
@@ -448,11 +451,11 @@ def map_splitext(name: str) -> Tuple[str, str]:
         ext = map_ext(name, ext)
     return nam, ext
 
-class NoExt(NamedTuple):
+class NoExt1(NamedTuple):
      ext: str
 def get_noexts() -> str:
-    return "\n".join(list(item.ext for item in each_noext()))
-def each_noext() -> Iterator[NoExt]:
+    return "\n".join(list(item.ext for item in each_noext1()))
+def each_noext1() -> Iterator[NoExt1]:
      noext = []
      for disksum, filesum, changes, ext, names in each_extsize5():
         logg.error("ext '%s'", ext)
@@ -462,7 +465,7 @@ def each_noext() -> Iterator[NoExt]:
      for name in noext:
          if name:
             logg.debug("name %s", name)
-            yield NoExt(name)
+            yield NoExt1(name)
 
 def get_help() -> str:
     text = ""
@@ -504,7 +507,7 @@ def run(cmd: str, args: List[str]) -> None:
        print(tabToFMT(FMT, list(each_extsize4()), headers, formats))  # type: ignore[arg-type]
        # print(get_extsizes())
     elif cmd in ["noext"]: # show files with no extension as show on 'extsizes'
-       print(tabToFMT(FMT, list(each_noext())))  # type: ignore[arg-type]
+       print(tabToFMT(FMT, list(each_noext1())))  # type: ignore[arg-type]
        # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
        print(get_nosizes(exts = cmd[1:]))
