@@ -120,12 +120,12 @@ def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
 def splits3(inp: str) ->  Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
-def split4(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
+def split4(inp: Iterable[str]) -> Iterator[Tuple[str, str, str, str]]:
     for line in inp:
         if " " in line:
             a, b, c, d = line.split(" ", 3)
             yield a, b, c, d.strip()
-def splits4(inp: str) ->  Iterator[Tuple[str, str, str]]:
+def splits4(inp: str) ->  Iterator[Tuple[str, str, str, str]]:
     for a, b, c, d in split4(inp.splitlines()):
         yield a, b, c, d
 
@@ -254,7 +254,7 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
             for name, value in asdict(row).items():
                 rowvalues[name] = format(name, value)
             writer.writerow(rowvalues)
-        return csvfile.getvalue()
+        return cast(str, csvfile.getvalue())
     # GFM
     def rightF(col: str, formatter: str) -> str:
         if rightalign(col):
@@ -286,20 +286,20 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
 class HistSize5(NamedTuple):
     rev: str
     typ: str
-    disksize: str
-    filesize: str
+    disksize: int
+    filesize: int
     name: str
 def get_rev_list() -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_size5())
 def get_sizes() -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_size5())
-def each_size5() -> Iterator[Tuple[str, str, int, int, str]]:
+def each_size5() -> Iterator[HistSize5]:
     git, main = GIT, BRANCH
     out = output(F"{git} rev-list {main} --objects", REPO)
-    revs = OrderedDict()
-    disks = {}
-    sizes = {}
-    types = {}
+    revs: Dict[str, str] = OrderedDict()
+    disks: Dict[str, int] = {}
+    sizes: Dict[str, int] = {}
+    types: Dict[str, str] = {}
     for rev, name in splits2(out):
          logg.debug("FOUND %s %s", rev, name)
          revs[rev] = name
@@ -313,14 +313,14 @@ def each_size5() -> Iterator[Tuple[str, str, int, int, str]]:
          sizes[rev] = int(siz)
          types[rev] = typ
     for rev in revs:
-         name = revs[rev]
-         disk = disks[rev]
-         size = sizes[rev]
-         type = types[rev]
-         yield HistSize5(rev, type, disk, size, name)
+         nam = revs[rev]
+         dsk = disks[rev]
+         sze = sizes[rev]
+         typ = types[rev]
+         yield HistSize5(rev, typ, dsk, sze, nam)
 def get_nosizes(exts: Optional[str] = None) -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosize5(exts=exts))
-def each_nosize5(exts: Optional[str] = None) -> Iterator[Tuple[str, str, int, int, str]]:
+def each_nosize5(exts: Optional[str] = None) -> Iterator[HistSize5]:
     extlist = exts.split(",") if exts is not None else EXT.split(",")
     for rev, type, disk, size, name in each_size5():
         if type in ["tree"]: continue
@@ -344,7 +344,7 @@ class SumSize5(NamedTuple):
 def get_nosumsizes(exts: Optional[str] = None) -> str:
     sumsizes = sorted(list(each_nosumsize4(exts=exts)), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
-def each_nosumsize4(exts: Optional[str] = None) -> Iterator[Tuple[int, int, str]]:
+def each_nosumsize4(exts: Optional[str] = None) -> Iterator[SumSize4]:
     extlist = exts.split(",") if exts is not None else EXT.split(",")
     for sum, disk, changes, name, parts in each_sumsize5():
         nam, ext = map_splitext(name)
@@ -355,10 +355,10 @@ def each_nosumsize4(exts: Optional[str] = None) -> Iterator[Tuple[int, int, str]
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
-def each_sumsize4() -> Iterator[Tuple[int, int, str]]:
+def each_sumsize4() -> Iterator[SumSize4]:
     for sum, disk, changes, name, parts in each_sumsize5():
         yield SumSize4(sum, disk, changes, name)
-def each_sumsize5() -> Iterator[Tuple[int, int, str, str]]:
+def each_sumsize5() -> Iterator[SumSize5]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, List[int]] = {}
@@ -385,14 +385,14 @@ class ExtSize5(NamedTuple):
 def get_extsizes() -> str:
     sumsizes = sorted(list(each_extsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in list(item)]) for item in sumsizes)
-def each_extsize4() -> Iterator[Tuple[int, int, str]]:
+def each_extsize4() -> Iterator[ExtSize5]:
     for sum, disk, changes, ext, names in each_extsize5():
         yield ExtSize5(sum, disk, changes, ext, "%s/files" % names.count("|"))
-def each_extsize5() -> Iterator[Tuple[int, int, int, str]]:
+def each_extsize5() -> Iterator[ExtSize5]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
-    dchanges: Dict[str, Dict[str, int]] = {}
-    for disksum, filesum, changes, name, diskchanges in each_sumsizes5():
+    dchanges: Dict[str, Dict[str, List[int]]] = {}
+    for disksum, filesum, changes, name, diskchanges in each_sumsize5():
         if not name: continue
         filename = fs.basename(name)
         nam, ext = map_splitext(filename)
@@ -429,7 +429,7 @@ exe.datasync = */DataSync
 exe.datasync = */DataSync_debug
 """
 
-def map_ext(name, ext):
+def map_ext(name: str, ext: str) -> str:
     if not ext:
         for line in mapping.splitlines():
             if "=" in line:
@@ -464,7 +464,7 @@ def each_noext() -> Iterator[NoExt]:
             logg.debug("name %s", name)
             yield NoExt(name)
 
-def get_help():
+def get_help() -> str:
     text = ""
     for line in open(__file__):
         if line.strip().startswith("elif cmd in"):
@@ -485,21 +485,27 @@ def run(cmd: str, args: List[str]) -> None:
        print(get_help())
     elif cmd in ["size"]: # show sizes of all revs
        headers=["disksize", "filesize", "rev", "typ"]
-       print(tabToFMT(FMT, list(each_size5()), headers, formats)) # print(get_sizes())
+       print(tabToFMT(FMT, list(each_size5()), headers, formats)) # type: ignore[arg-type]
+       # print(get_sizes())
     elif cmd in ["nosize"]: # show sizes of all revs with -E '' (default no extension)
        headers=["disksize", "filesize", "rev", "typ"]
-       print(tabToFMT(FMT, list(each_nosize5()), headers, formats)) # print(get_nosizes())
+       print(tabToFMT(FMT, list(each_nosize5()), headers, formats))  # type: ignore[arg-type]
+       # print(get_nosizes())
     elif cmd in ["nosumsize"]: # show sizes of all revs with -E '' summarized per file history
        headers=["disksum", "filesum", "changes"]
-       print(tabToFMT(FMT, list(each_nosumsize4()), headers, formats)) # print(get_nosumsizes())
+       print(tabToFMT(FMT, list(each_nosumsize4()), headers, formats))  # type: ignore[arg-type]
+       # print(get_nosumsizes())
     elif cmd in ["sumsize"]: # show sizes of all revs summarized per file history
        headers=["disksum", "filesum", "changes"]
-       print(tabToFMT(FMT, list(each_sumsize4()), headers, formats)) # print(get_sumsizes())
+       print(tabToFMT(FMT, list(each_sumsize4()), headers, formats))  # type: ignore[arg-type]
+       # print(get_sumsizes())
     elif cmd in ["extsize"]: # show sizes of all revs summarized per file extension and history
        headers=["disksum", "filesum", "changes","ext", "files"]
-       print(tabToFMT(FMT, list(each_extsize4()), headers, formats)) # print(get_extsizes())
+       print(tabToFMT(FMT, list(each_extsize4()), headers, formats))  # type: ignore[arg-type]
+       # print(get_extsizes())
     elif cmd in ["noext"]: # show files with no extension as show on 'extsizes'
-       print(tabToFMT(FMT, list(each_noext()))) # print(get_noexts())
+       print(tabToFMT(FMT, list(each_noext())))  # type: ignore[arg-type]
+       # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
        print(get_nosizes(exts = cmd[1:]))
     elif "." in cmd:
