@@ -27,6 +27,8 @@ try:
 except ImportError:
     from io import StringIO  # Python3
 
+import git_bigfile as app
+
 GIT = "git"
 BRANCH = "main"
 KEEP = False
@@ -259,6 +261,42 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes["b.zip"], 20588)
         self.assertEqual(types["a.txt"], "blob")
         self.assertEqual(types["b.zip"], "blob")
+        if not KEEP: self.rm_testdir()
+    def test_202_bigfile(self) -> None:
+        testdir = self.mk_testdir()
+        git, main = GIT, BRANCH
+        sh____(F"{git} init -b {main} {testdir}")
+        text_file(F"{testdir}/a.txt", gentext(20*KB))
+        zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
+        sh____(F"cd {testdir} && {git} add *.*")
+        sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
+        sh____(F"cd {testdir} && {git} --no-pager diff --name-only")
+        app.REPO = testdir
+        sizes = list(app.each_size5())
+        self.assertEqual(20 * KB, 20480)
+        self.assertEqual(sizes[1].name, "a.txt")
+        self.assertEqual(sizes[2].name, "b.zip")
+        self.assertEqual(sizes[1].filesize, 20480)
+        self.assertEqual(sizes[2].filesize, 20588)
+        if not KEEP: self.rm_testdir()
+    def test_203_bigfile(self) -> None:
+        testdir = self.mk_testdir()
+        git, main = GIT, BRANCH
+        sh____(F"{git} init -b {main} {testdir}")
+        text = gentext(20*KB)
+        logg.info("TEXT %s", text)
+        text_file(F"{testdir}/a.txt", text)
+        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        sh____(F"{git} add *.*", testdir)
+        sh____(F"{git} --no-pager commit -m 'initial'", testdir)
+        sh____(F"{git} --no-pager diff --name-only", testdir)
+        app.REPO = testdir
+        sizes = list(app.each_size5())
+        self.assertEqual(20 * KB, 20480)
+        self.assertEqual(sizes[1].name, "a.txt")
+        self.assertEqual(sizes[2].name, "b.zip")
+        self.assertEqual(sizes[1].filesize, 20480)
+        self.assertEqual(sizes[2].filesize, 20588)
         if not KEEP: self.rm_testdir()
 
 if __name__ == "__main__":
