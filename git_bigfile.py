@@ -4,7 +4,7 @@
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
 __version__ = "0.1.0"
 
-from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast
+from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
 
 import os, sys
 import os.path as fs
@@ -12,7 +12,9 @@ import re
 import subprocess
 import zipfile
 import unittest
-from collections import OrderedDict
+from datetime import date as Date
+from datetime import datetime as Time
+from collections import OrderedDict, namedtuple
 from fnmatch import fnmatchcase as fnmatch
 import logging
 logg = logging.getLogger("CHECK")
@@ -32,6 +34,7 @@ BRANCH = "main"
 PRETTY = False
 KEEP = False
 EXT = ""
+FMT = ""
 KB = 1024
 MB = KB * KB
 
@@ -126,23 +129,171 @@ def splits4(inp: str) ->  Iterator[Tuple[str, str, str]]:
     for a, b, c, d in split4(inp.splitlines()):
         yield a, b, c, d
 
-def get_nosizes(exts: Optional[str] = None) -> str:
-    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosizes(exts=exts))
-def each_nosizes(exts: Optional[str] = None) -> Iterator[Tuple[str, str, int, int, str]]:
-    extlist = exts.split(",") if exts is not None else EXT.split(",")
-    for rev, type, disk, size, name in each_sizes():
-        if type in ["tree"]: continue
-        nam, ext = map_splitext(name)
-        for pat in extlist:
-            if fnmatch(ext, pat):
-                yield rev, type, disk, size, name    
-                break
+# ..............................................................
 
+JSONItem = Union[str, int, float, bool, Date, Time, None, Dict[str, Any], List[Any]]
+JSONDict = Dict[str, JSONItem]
+JSONList = List[JSONDict]
+RowSortList = Union[Sequence[str], Dict[str, str], Callable[[JSONDict], str]]
+ColSortList = Union[Sequence[str], Dict[str, str], Callable[[str], str]]
+LegendList = Union[Dict[str, str], Sequence[str]]
+
+def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[str, str] = {}, *,  #
+             datedelim: str = '-', legend: LegendList = [],  #
+             reorder: ColSortList = [], combine: Dict[str, str] = {}) -> str:
+    """ This code is supposed to be copy-n-paste into other files. You can safely try-import from 
+        tabtotext or tabtoxlsx to override this function. Only a subset of features is supported. """
+    tab = '|'
+    if fmt in ["wide", "text"]:
+        tab = ''
+    if fmt in ["tabs", "tab", "dat", "ifs", "data"]:
+        tab = '\t'
+    if fmt in ["csv", "scsv", "list"]:
+        tab = ';'
+    if fmt in ["xls", "sxlx"]:
+        tab = ','
+    none_string = "~"
+    true_string = "(yes)"
+    false_string = "(no)"
+    minwidth = 5
+    floatfmt = "%4.2f"
+    noright = fmt in ["dat"]
+    noheaders = fmt in ["text", "list"]
+    formatright = re.compile("[{]:[^{}]*>[^{}]*[}]")
+    formatnumber = re.compile("[{]:[^{}]*[defghDEFGHMQR$%][}]")
+    def rightalign(col: str) -> bool:
+        if col in formats and not noright:
+            if formats[col].startswith(" "):
+                return True
+            if formatright.search(formats[col]):
+                return True
+            if formatnumber.search(formats[col]):
+                return True
+        return False
+    def format(name: str, val: JSONItem) -> str:
+        if name in formats:
+            fmt4 = formats[name]
+            if "{:" in fmt4:
+                 try:
+                     return fmt4.format(val)
+                 except Exception as e:
+                     logg.debug("format <%s> does not apply: %s", fmt, e)
+            if "%s" in fmt4:
+                 try:
+                     return fmt % strJSON(val)
+                 except Exception as e:
+                    logg.debug("format <%s> does not apply: %s", fmt, e)
+        if isinstance(val, float):
+            return floatfmt % val
+        return strJSON(val)
+    def strJSON(value: JSONItem) -> str:
+         if value is None: return none_string
+         if value is False: return false_string
+         if value is True: return true_string
+         if isinstance(value, Time):
+             return value.strftime("%Y-%m-%d.%H%M")
+         if isinstance(value, Date):
+             return value.strftime("%Y-%m-%d")
+         return str(value)
+    def asdict(item: JSONDict) -> JSONDict:
+        if hasattr(item, "_asdict"):
+            return item._asdict() # type: ignore[union-attr, no-any-return, arg-type]
+        return item
+    cols: Dict[str, int] = {}
+    for item in result:
+        for name, value in asdict(item).items():
+            if name not in cols:
+                cols[name] = max(minwidth, len(name))
+            cols[name] = max(cols[name], len(format(name, value)))
+    def sortkey(header: str) -> str:
+        if callable(reorder):
+            return reorder(header)
+        else:
+            sortheaders = reorder
+            if not sortheaders and not callable(sorts):
+                sortheaders = sorts
+            if isinstance(sortheaders, dict):
+                if header in sortheaders:
+                    return sortheaders[header]
+            else:
+                if header in sortheaders:
+                    return "%07i" % sortheaders.index(header)
+        return header
+    def sortrow(row: JSONDict) -> str:
+        item = asdict(row)
+        if callable(sorts):
+            return sorts(item)
+        else:
+            sortvalue = ""
+            for sort in sorts:
+                if sort in item:
+                    value = item[sort]
+                    if value is None:
+                        sortvalue += "\n?"
+                    elif value is False:
+                        sortvalue += "\n"
+                    elif value is True:
+                        sortvalue += "\n!"
+                    elif isinstance(value, int):
+                        sortvalue += "\n%020i" % value
+                    else:
+                        sortvalue += "\n" + strJSON(value)
+                else:
+                    sortvalue += "\n?"
+            return sortvalue
+    # CSV
+    if fmt in ["list", "csv", "scsv", "xlsx", "xls", "tab","dat", "ifs", "data"]:
+        tab1 = tab if tab else ";"
+        import csv
+        csvfile = StringIO()
+        writer = csv.DictWriter(csvfile, fieldnames=sorted(cols.keys(), key=sortkey), restval='~', quoting=csv.QUOTE_MINIMAL, delimiter=tab1)
+        if not noheaders:
+           writer.writeheader()
+        for row in sorted(result, key=sortrow):
+            rowvalues: Dict[str, str] = {}
+            for name, value in asdict(row).items():
+                rowvalues[name] = format(name, value)
+            writer.writerow(rowvalues)
+        return csvfile.getvalue()
+    # GFM
+    def rightF(col: str, formatter: str) -> str:
+        if rightalign(col):
+            return formatter.replace("%-", "%")
+        return formatter
+    def rightS(col: str, formatter: str) -> str:
+        if rightalign(col):
+            return formatter[:-1] + ":"
+        return formatter
+    tab2 = (tab + " " if tab else "")
+    lines: List[str] = []
+    if not noheaders:
+        line = [rightF(name, tab2 + "%%-%is" % cols[name]) % name for name in sorted(cols.keys(), key=sortkey)]
+        lines += [(" ".join(line)).rstrip()]
+        if tab:
+            seperators = [(tab2 + "%%-%is" % cols[name]) % rightS(name, "-" * cols[name])
+                          for name in sorted(cols.keys(), key=sortkey)]
+            lines.append(" ".join(seperators))
+    for item in sorted(result, key=sortrow):
+        values: Dict[str, str] = {}
+        for name, value in asdict(item).items():
+            values[name] = format(name, value)
+        line = [rightF(name, tab2 + "%%-%is" % cols[name]) % values.get(name, none_string)
+                for name in sorted(cols.keys(), key=sortkey)]
+        lines.append((" ".join(line)).rstrip())
+    return "\n".join(lines) + "\n"
+
+# ..............................................................
+class HistSize5(NamedTuple):
+    rev: str
+    typ: str
+    disksize: str
+    filesize: str
+    name: str
 def get_rev_list() -> str:
-    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_sizes())
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_size5())
 def get_sizes() -> str:
-    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_sizes())
-def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_size5())
+def each_size5() -> Iterator[Tuple[str, str, int, int, str]]:
     git, main = GIT, BRANCH
     out = output(F"{git} rev-list {main} --objects", REPO)
     revs = OrderedDict()
@@ -166,30 +317,52 @@ def each_sizes() -> Iterator[Tuple[str, str, int, int, str]]:
          disk = disks[rev]
          size = sizes[rev]
          type = types[rev]
-         yield rev, type, disk, size, name
-
-def get_nosumsizes(exts: Optional[str] = None) -> str:
-    sumsizes = sorted(list(each_nosumsizes4(exts=exts)), key=lambda x: x[0])
-    return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
-def each_nosumsizes4(exts: Optional[str] = None) -> Iterator[Tuple[int, int, str]]:
+         yield HistSize5(rev, type, disk, size, name)
+def get_nosizes(exts: Optional[str] = None) -> str:
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosize5(exts=exts))
+def each_nosize5(exts: Optional[str] = None) -> Iterator[Tuple[str, str, int, int, str]]:
     extlist = exts.split(",") if exts is not None else EXT.split(",")
-    for sum, disk, changes, name, parts in each_sumsizes5():
+    for rev, type, disk, size, name in each_size5():
+        if type in ["tree"]: continue
         nam, ext = map_splitext(name)
         for pat in extlist:
             if fnmatch(ext, pat):
-                yield sum, disk, changes, name
+                yield HistSize5(rev, type, disk, size, name)
+                break
+
+class SumSize4(NamedTuple):
+    disksum: int
+    filesum: int
+    changes: int
+    name: str
+class SumSize5(NamedTuple):
+    disksum: int
+    filesum: int
+    changes: int
+    name: str
+    dchanges: str
+def get_nosumsizes(exts: Optional[str] = None) -> str:
+    sumsizes = sorted(list(each_nosumsize4(exts=exts)), key=lambda x: x[0])
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
+def each_nosumsize4(exts: Optional[str] = None) -> Iterator[Tuple[int, int, str]]:
+    extlist = exts.split(",") if exts is not None else EXT.split(",")
+    for sum, disk, changes, name, parts in each_sumsize5():
+        nam, ext = map_splitext(name)
+        for pat in extlist:
+            if fnmatch(ext, pat):
+                yield SumSize4(sum, disk, changes, name)
                 break
 def get_sumsizes() -> str:
-    sumsizes = sorted(list(each_sumsizes4()), key=lambda x: x[0])
+    sumsizes = sorted(list(each_sumsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
-def each_sumsizes4() -> Iterator[Tuple[int, int, str]]:
-    for sum, disk, changes, name, parts in each_sumsizes5():
-        yield sum, disk, changes, name
-def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
+def each_sumsize4() -> Iterator[Tuple[int, int, str]]:
+    for sum, disk, changes, name, parts in each_sumsize5():
+        yield SumSize4(sum, disk, changes, name)
+def each_sumsize5() -> Iterator[Tuple[int, int, str, str]]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, List[int]] = {}
-    for rev, type, disk, size, name in each_sizes():
+    for rev, type, disk, size, name in each_size5():
         if not name: continue
         if type in ["tree"]: continue
         if name not in filesums:
@@ -200,15 +373,22 @@ def each_sumsizes5() -> Iterator[Tuple[int, int, str, str]]:
         disksums[name] += disk
         dchanges[name] += [ disk ]
     for name, disksum in disksums.items():
-        yield disksum, filesums[name], len(dchanges[name]), name, "|" + "+".join([str(item) for item in dchanges[name]])
+        yield SumSize5(disksum, filesums[name], len(dchanges[name]), name, 
+              "|" + "+".join([str(item) for item in dchanges[name]]))
 
+class ExtSize5(NamedTuple):
+     filesum: int
+     disksum: int
+     changes: int
+     ext: str
+     files: str
 def get_extsizes() -> str:
-    sumsizes = sorted(list(each_extsizes5_files()), key=lambda x: x[0])
-    return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
-def each_extsizes5_files() -> Iterator[Tuple[int, int, str]]:
-    for sum, disk, changes, ext, names in each_extsizes5():
-        yield sum, disk, changes, ext, "%s/revs" % len(names)
-def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
+    sumsizes = sorted(list(each_extsize4()), key=lambda x: x[0])
+    return "\n".join(" ".join([str_(elem) for elem in list(item)]) for item in sumsizes)
+def each_extsize4() -> Iterator[Tuple[int, int, str]]:
+    for sum, disk, changes, ext, names in each_extsize5():
+        yield ExtSize5(sum, disk, changes, ext, "%s/files" % names.count("|"))
+def each_extsize5() -> Iterator[Tuple[int, int, int, str]]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, Dict[str, int]] = {}
@@ -226,7 +406,7 @@ def each_extsizes5() -> Iterator[Tuple[int, int, int, str]]:
         disksums[ext] += disksum
         dchanges[ext][name] += [ disksum ]
     for ext, disksum in disksums.items():
-        yield disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext])
+        yield ExtSize5(disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext]))
 
 mapping = """
 jenkinsfile= */Jenkinsfile
@@ -268,19 +448,21 @@ def map_splitext(name: str) -> Tuple[str, str]:
         ext = map_ext(name, ext)
     return nam, ext
 
-def get_noext() -> str:
-    return "\n".join(list(each_noext()))
-def each_noext() -> Iterator[str]:
+class NoExt(NamedTuple):
+     ext: str
+def get_noexts() -> str:
+    return "\n".join(list(item.ext for item in each_noext()))
+def each_noext() -> Iterator[NoExt]:
      noext = []
-     for disksum, filesum, changes, ext, names in each_extsizes5():
-        logg.info("ext '%s'", ext)
+     for disksum, filesum, changes, ext, names in each_extsize5():
+        logg.error("ext '%s'", ext)
         if fnmatch(ext, EXT):
             noext = names.split("|")
             logg.debug("found %s noext", len(noext))
      for name in noext:
          if name:
             logg.debug("name %s", name)
-            yield name
+            yield NoExt(name)
 
 def get_help():
     text = ""
@@ -291,30 +473,39 @@ def get_help():
     return text + __doc__
 
 def run(cmd: str, args: List[str]) -> None:
+    if PRETTY:
+        formats={"disksum":" {:_}", "filesum": " {:_}", "changes": " "}
+    else:
+        formats={"disksum":" ", "filesum": " ", "changes": " "}
     name = cmd.replace("-", "_")
     if F"run_{name}" in globals():
         methodcall = globals()[F"run_{name}"]
         methodcall()
     elif cmd in ["help"]: # this help screen
        print(get_help())
-    elif cmd in ["sizes"]: # show sizes of all revs
-       print(get_sizes())
-    elif cmd in ["nosizes"]: # show sizes of all revs with -E '' (default no extension)
-       print(get_nosizes())
-    elif cmd in ["sumsizes"]: # show sizes of all revs summarized per file history
-       print(get_sumsizes())
-    elif cmd in ["nosumsizes"]: # show sizes of all revs with -E '' summarized per file history
-       print(get_nosumsizes())
-    elif cmd in ["extsizes"]: # show sizes of all revs summarized per file extension and history
-       print(get_extsizes())
+    elif cmd in ["size"]: # show sizes of all revs
+       headers=["disksize", "filesize", "rev", "typ"]
+       print(tabToFMT(FMT, list(each_size5()), headers, formats)) # print(get_sizes())
+    elif cmd in ["nosize"]: # show sizes of all revs with -E '' (default no extension)
+       headers=["disksize", "filesize", "rev", "typ"]
+       print(tabToFMT(FMT, list(each_nosize5()), headers, formats)) # print(get_nosizes())
+    elif cmd in ["nosumsize"]: # show sizes of all revs with -E '' summarized per file history
+       headers=["disksum", "filesum", "changes"]
+       print(tabToFMT(FMT, list(each_nosumsize4()), headers, formats)) # print(get_nosumsizes())
+    elif cmd in ["sumsize"]: # show sizes of all revs summarized per file history
+       headers=["disksum", "filesum", "changes"]
+       print(tabToFMT(FMT, list(each_sumsize4()), headers, formats)) # print(get_sumsizes())
+    elif cmd in ["extsize"]: # show sizes of all revs summarized per file extension and history
+       headers=["disksum", "filesum", "changes","ext", "files"]
+       print(tabToFMT(FMT, list(each_extsize4()), headers, formats)) # print(get_extsizes())
     elif cmd in ["noext"]: # show files with no extension as show on 'extsizes'
-       print(get_noext())
+       print(tabToFMT(FMT, list(each_noext()))) # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
        print(get_nosizes(exts = cmd[1:]))
     elif "." in cmd:
        print(get_nosumsizes(exts = cmd))
-    elif F"run_{name}" in globals():
-        methodcall = globals()[F"run_{name}"]
+    elif F"get_{name}" in globals():
+        methodcall = globals()[F"get_{name}"]
         print(methodcall())
 
 if __name__ == "__main__":
@@ -335,6 +526,8 @@ if __name__ == "__main__":
                   help="enhanced value results [%default]")
     _o.add_option("-E", "--ext", metavar="EXT", default=EXT,
                   help="show nolist for this ext [%default]")
+    _o.add_option("-o", "--fmt", metavar="md|text|csv", default=FMT,
+                  help="use differen tabtotext [%default]")
     opt, args = _o.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
@@ -343,6 +536,7 @@ if __name__ == "__main__":
     REPO = opt.repo or None
     PRETTY = opt.pretty
     EXT = opt.ext
+    FMT = opt.fmt
     logg.debug("BRANCH %s REPO %s", BRANCH, REPO)
     #
     logfile = None
