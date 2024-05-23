@@ -93,7 +93,7 @@ def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool =
         out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
-def gentext(size: int, start="") -> str:
+def gentext(size: int, start: str ="") -> str:
     random.seed(1234567891234567890)
     result = StringIO(start)
     old = ''
@@ -137,7 +137,7 @@ def zip_file(filename: str, content: Dict[str, str]) -> None:
         for name, data in content.items():
             if data.startswith("\n"):
                 text = ""
-                x = re.match("(?s)\n( *)", content)
+                x = re.match("(?s)\n( *)", data)
                 assert x is not None
                 indent = x.group(1)
                 for line in data[1:].split("\n"):
