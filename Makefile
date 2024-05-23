@@ -87,8 +87,6 @@ AUTOPEP8_INPLACE= --in-place
 	$(GIT) --no-pager diff $(@:.pep8=)
 
 type: 
-	$(MAKE) git_bigfile.py.type
-	$(MAKE) git_bigfile_tests.py.type	
+	$(MAKE) $(SCRIPT).type $(SCRIPT:.py=_tests.py).type
 pep8 style: 
-	$(MAKE) git_bigfile.py.pep8
-	$(MAKE) git_bigfile_tests.py.pep8
+	$(MAKE) $(SCRIPT).pep8 $(SCRIPT:.py=_tests.py).pep8
