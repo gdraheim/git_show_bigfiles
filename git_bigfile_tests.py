@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+import git_bigfile as app
 """ test cases for bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
@@ -6,7 +7,8 @@ __version__ = "1.0.1213"
 
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
 
-import os, sys
+import os
+import sys
 import re
 import subprocess
 import zipfile
@@ -27,7 +29,6 @@ try:
 except ImportError:
     from io import StringIO  # Python3
 
-import git_bigfile as app
 
 GIT = "git"
 BRANCH = "main"
@@ -88,14 +89,15 @@ def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool =
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if input is not None:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(input.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
-def gentext(size: int, start: str ="") -> str:
+def gentext(size: int, start: str = "") -> str:
     random.seed(1234567891234567890)
     result = StringIO(start)
     old = ''
@@ -104,10 +106,10 @@ def gentext(size: int, start: str ="") -> str:
         while True:
             if old in " aeiouy":
                 x = random.choice("bcdfghjklmnpqrstvwxz")
-                if x == old or x == pre: 
+                if x == old or x == pre:
                     x = '\n'
             else:
-               x = random.choice(" aeiouy")
+                x = random.choice(" aeiouy")
             pre = old
             old = x
             break
@@ -144,7 +146,7 @@ def zip_file(filename: str, content: Dict[str, str]) -> None:
                 indent = x.group(1)
                 for line in data[1:].split("\n"):
                     if line.startswith(indent):
-                         line = line[len(indent):]
+                        line = line[len(indent):]
                     text += line + "\n"
                 f.writestr(name, text)
             else:
@@ -155,7 +157,7 @@ def split2(inp: Iterable[str]) -> Iterator[Tuple[str, str]]:
         if " " in line:
             a, b = line.split(" ", 1)
             yield a, b.strip()
-def splits2(inp: str) ->  Iterator[Tuple[str, str]]:
+def splits2(inp: str) -> Iterator[Tuple[str, str]]:
     for a, b in split2(inp.splitlines()):
         yield a, b
 
@@ -164,7 +166,7 @@ def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
         if " " in line:
             a, b, c = line.split(" ", 2)
             yield a, b, c.strip()
-def splits3(inp: str) ->  Iterator[Tuple[str, str, str]]:
+def splits3(inp: str) -> Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
 
@@ -206,7 +208,7 @@ class GitBigfileTest(unittest.TestCase):
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
         text_file(F"{testdir}/a.txt", "A File")
-        zip_file(F"{testdir}/b.zip", { "b.txt": "B File"})
+        zip_file(F"{testdir}/b.zip", {"b.txt": "B File"})
         sh____(F"cd {testdir} && {git} add *.*")
         sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && {git} --no-pager show --name-only")
@@ -215,8 +217,8 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text_file(F"{testdir}/a.txt", gentext(20*KB))
-        zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
+        text_file(F"{testdir}/a.txt", gentext(20 * KB))
+        zip_file(F"{testdir}/b.zip", {"b.txt": gentext(20 * KB)})
         sh____(F"cd {testdir} && {git} add *.*")
         sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && {git} --no-pager diff --name-only")
@@ -235,10 +237,10 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
@@ -266,8 +268,8 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text_file(F"{testdir}/a.txt", gentext(20*KB))
-        zip_file(F"{testdir}/b.zip", { "b.txt": gentext(20*KB)})
+        text_file(F"{testdir}/a.txt", gentext(20 * KB))
+        zip_file(F"{testdir}/b.zip", {"b.txt": gentext(20 * KB)})
         sh____(F"cd {testdir} && {git} add *.*")
         sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && {git} --no-pager diff --name-only")
@@ -283,10 +285,10 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
@@ -303,10 +305,10 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
@@ -327,10 +329,10 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
@@ -342,17 +344,17 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(20 * KB, 20480)
         self.assertEqual(sizes[0].name, "a.txt")
         self.assertEqual(sizes[1].name, "b.zip")
-        self.assertEqual(sizes[0].filesum, 5120+20480)
+        self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
         if not KEEP: self.rm_testdir()
     def test_413_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
@@ -365,17 +367,17 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(20 * KB, 20480)
         self.assertEqual(sizes[0].ext, ".txt")
         self.assertEqual(sizes[1].ext, ".zip")
-        self.assertEqual(sizes[0].filesum, 5120+20480)
+        self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
         if not KEEP: self.rm_testdir()
     def test_414_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
@@ -392,7 +394,7 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[0].ext, ".txt")
         self.assertEqual(sizes[1].ext, ".zip")
         self.assertEqual(sizes[2].ext, "")
-        self.assertEqual(sizes[0].filesum, 5120+20480)
+        self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
         self.assertEqual(sizes[2].filesum, 8192)
         if not KEEP: self.rm_testdir()
@@ -400,10 +402,10 @@ class GitBigfileTest(unittest.TestCase):
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
         sh____(F"{git} init -b {main} {testdir}")
-        text = gentext(20*KB)
+        text = gentext(20 * KB)
         logg.info("TEXT %s", text)
         text_file(F"{testdir}/a.txt", text)
-        zip_file(F"{testdir}/b.zip", { "b.txt": text})
+        zip_file(F"{testdir}/b.zip", {"b.txt": text})
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
