@@ -6,7 +6,8 @@ __version__ = "1.0.1213"
 
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
 
-import os, sys
+import os
+import sys
 import os.path as fs
 import re
 import subprocess
@@ -42,14 +43,14 @@ def str_(obj: Any, no: str = '-') -> str:
     if not obj:
         return no
     if isinstance(obj, int) and PRETTY:
-       text = str(obj)
-       if len(text) > 9:
-          return text[:-9] + "_" + text[-9:-6] + "_" + text[-6:-3] + "_" + text[-3:]
-       if len(text) > 6:
-          return text[:-6] + "_" + text[-6:-3] + "_" + text[-3:]
-       if len(text) > 3:
-          return text[:-3] + "_" + text[-3:]
-       return text
+        text = str(obj)
+        if len(text) > 9:
+            return text[:-9] + "_" + text[-9:-6] + "_" + text[-6:-3] + "_" + text[-3:]
+        if len(text) > 6:
+            return text[:-6] + "_" + text[-6:-3] + "_" + text[-3:]
+        if len(text) > 3:
+            return text[:-3] + "_" + text[-3:]
+        return text
     text = str(obj)
     if not text:
         return no
@@ -96,7 +97,8 @@ def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool =
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if input is not None:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(input.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -108,7 +110,7 @@ def split2(inp: Iterable[str]) -> Iterator[Tuple[str, str]]:
         if " " in line:
             a, b = line.split(" ", 1)
             yield a, b.strip()
-def splits2(inp: str) ->  Iterator[Tuple[str, str]]:
+def splits2(inp: str) -> Iterator[Tuple[str, str]]:
     for a, b in split2(inp.splitlines()):
         yield a, b
 
@@ -117,7 +119,7 @@ def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
         if " " in line:
             a, b, c = line.split(" ", 2)
             yield a, b, c.strip()
-def splits3(inp: str) ->  Iterator[Tuple[str, str, str]]:
+def splits3(inp: str) -> Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
 def split4(inp: Iterable[str]) -> Iterator[Tuple[str, str, str, str]]:
@@ -125,7 +127,7 @@ def split4(inp: Iterable[str]) -> Iterator[Tuple[str, str, str, str]]:
         if " " in line:
             a, b, c, d = line.split(" ", 3)
             yield a, b, c, d.strip()
-def splits4(inp: str) ->  Iterator[Tuple[str, str, str, str]]:
+def splits4(inp: str) -> Iterator[Tuple[str, str, str, str]]:
     for a, b, c, d in split4(inp.splitlines()):
         yield a, b, c, d
 
@@ -174,30 +176,30 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
         if name in formats:
             fmt4 = formats[name]
             if "{:" in fmt4:
-                 try:
-                     return fmt4.format(val)
-                 except Exception as e:
-                     logg.debug("format <%s> does not apply: %s", fmt, e)
+                try:
+                    return fmt4.format(val)
+                except Exception as e:
+                    logg.debug("format <%s> does not apply: %s", fmt, e)
             if "%s" in fmt4:
-                 try:
-                     return fmt % strJSON(val)
-                 except Exception as e:
+                try:
+                    return fmt % strJSON(val)
+                except Exception as e:
                     logg.debug("format <%s> does not apply: %s", fmt, e)
         if isinstance(val, float):
             return floatfmt % val
         return strJSON(val)
     def strJSON(value: JSONItem) -> str:
-         if value is None: return none_string
-         if value is False: return false_string
-         if value is True: return true_string
-         if isinstance(value, Time):
-             return value.strftime("%Y-%m-%d.%H%M")
-         if isinstance(value, Date):
-             return value.strftime("%Y-%m-%d")
-         return str(value)
+        if value is None: return none_string
+        if value is False: return false_string
+        if value is True: return true_string
+        if isinstance(value, Time):
+            return value.strftime("%Y-%m-%d.%H%M")
+        if isinstance(value, Date):
+            return value.strftime("%Y-%m-%d")
+        return str(value)
     def asdict(item: JSONDict) -> JSONDict:
         if hasattr(item, "_asdict"):
-            return item._asdict() # type: ignore[union-attr, no-any-return, arg-type]
+            return item._asdict()  # type: ignore[union-attr, no-any-return, arg-type]
         return item
     cols: Dict[str, int] = {}
     for item in result:
@@ -242,13 +244,14 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
                     sortvalue += "\n?"
             return sortvalue
     # CSV
-    if fmt in ["list", "csv", "scsv", "xlsx", "xls", "tab","dat", "ifs", "data"]:
+    if fmt in ["list", "csv", "scsv", "xlsx", "xls", "tab", "dat", "ifs", "data"]:
         tab1 = tab if tab else ";"
         import csv
         csvfile = StringIO()
-        writer = csv.DictWriter(csvfile, fieldnames=sorted(cols.keys(), key=sortkey), restval='~', quoting=csv.QUOTE_MINIMAL, delimiter=tab1)
+        writer = csv.DictWriter(csvfile, fieldnames=sorted(cols.keys(), key=sortkey),
+                                restval='~', quoting=csv.QUOTE_MINIMAL, delimiter=tab1)
         if not noheaders:
-           writer.writeheader()
+            writer.writeheader()
         for row in sorted(result, key=sortrow):
             rowvalues: Dict[str, str] = {}
             for name, value in asdict(row).items():
@@ -301,23 +304,23 @@ def each_size5() -> Iterator[HistSize5]:
     sizes: Dict[str, int] = {}
     types: Dict[str, str] = {}
     for rev, name in splits2(out):
-         logg.debug("FOUND %s %s", rev, name)
-         revs[rev] = name
-    objectnames="\n".join(revs.keys()) + "\n"
+        logg.debug("FOUND %s %s", rev, name)
+        revs[rev] = name
+    objectnames = "\n".join(revs.keys()) + "\n"
     logg.debug("objectnames => %s", objectnames)
     siz = output(F"{git} cat-file --batch-check='%(objectsize:disk) %(objectsize) %(objecttype) %(objectname)'",
                  REPO, input=objectnames)
     logg.error("cat-file => %s", siz)
     for disk1, size1, type1, rev in splits4(siz):
-         disks[rev] = int(disk1)
-         sizes[rev] = int(size1)
-         types[rev] = type1
+        disks[rev] = int(disk1)
+        sizes[rev] = int(size1)
+        types[rev] = type1
     for rev in revs:
-         nam = revs[rev]
-         dsk = disks[rev]
-         sze = sizes[rev]
-         typ = types[rev]
-         yield HistSize5(rev, typ, dsk, sze, nam)
+        nam = revs[rev]
+        dsk = disks[rev]
+        sze = sizes[rev]
+        typ = types[rev]
+        yield HistSize5(rev, typ, dsk, sze, nam)
 def get_nosizes(exts: Optional[str] = None) -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosize5(exts=exts))
 def each_nosize5(exts: Optional[str] = None) -> Iterator[HistSize5]:
@@ -368,22 +371,22 @@ def each_sumsize5() -> Iterator[SumSize5]:
         if not name: continue
         if type in ["tree"]: continue
         if name not in filesums:
-             disksums[name] = 0
-             filesums[name] = 0
-             dchanges[name] = []
+            disksums[name] = 0
+            filesums[name] = 0
+            dchanges[name] = []
         filesums[name] += size
         disksums[name] += disk
-        dchanges[name] += [ disk ]
+        dchanges[name] += [disk]
     for name, disksum in disksums.items():
-        yield SumSize5(disksum, filesums[name], len(dchanges[name]), name, 
-              "|" + "+".join([str(item) for item in dchanges[name]]))
+        yield SumSize5(disksum, filesums[name], len(dchanges[name]), name,
+                       "|" + "+".join([str(item) for item in dchanges[name]]))
 
 class ExtSize5(NamedTuple):
-     disksum: int
-     filesum: int
-     changes: int
-     ext: str
-     files: str
+    disksum: int
+    filesum: int
+    changes: int
+    ext: str
+    files: str
 def get_extsizes() -> str:
     sumsizes = sorted(list(each_extsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in list(item)]) for item in sumsizes)
@@ -400,14 +403,14 @@ def each_extsize5() -> Iterator[ExtSize5]:
         filename = fs.basename(name)
         nam, ext = map_splitext(filename)
         if ext not in filesums:
-             disksums[ext] = 0
-             filesums[ext] = 0
-             dchanges[ext] = {}
+            disksums[ext] = 0
+            filesums[ext] = 0
+            dchanges[ext] = {}
         if name not in dchanges[ext]:
-             dchanges[ext][name] = []
+            dchanges[ext][name] = []
         filesums[ext] += filesum
         disksums[ext] += disksum
-        dchanges[ext][name] += [ disksum ]
+        dchanges[ext][name] += [disksum]
     for ext, disksum in disksums.items():
         yield ExtSize5(disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext]))
 
@@ -452,18 +455,18 @@ def map_splitext(name: str) -> Tuple[str, str]:
     return nam, ext
 
 class NoExt1(NamedTuple):
-     ext: str
+    ext: str
 def get_noexts() -> str:
     return "\n".join(list(item.ext for item in each_noext1()))
 def each_noext1() -> Iterator[NoExt1]:
-     noext = []
-     for disksum, filesum, changes, ext, names in each_extsize5():
+    noext = []
+    for disksum, filesum, changes, ext, names in each_extsize5():
         logg.error("ext '%s'", ext)
         if fnmatch(ext, EXT):
             noext = names.split("|")
             logg.debug("found %s noext", len(noext))
-     for name in noext:
-         if name:
+    for name in noext:
+        if name:
             logg.debug("name %s", name)
             yield NoExt1(name)
 
@@ -477,42 +480,42 @@ def get_help() -> str:
 
 def run(cmd: str, args: List[str]) -> None:
     if PRETTY:
-        formats={"disksum":" {:_}", "filesum": " {:_}", "changes": " "}
+        formats = {"disksum": " {:_}", "filesum": " {:_}", "changes": " "}
     else:
-        formats={"disksum":" ", "filesum": " ", "changes": " "}
+        formats = {"disksum": " ", "filesum": " ", "changes": " "}
     name = cmd.replace("-", "_")
     if F"run_{name}" in globals():
         methodcall = globals()[F"run_{name}"]
         methodcall()
-    elif cmd in ["help"]: # this help screen
-       print(get_help())
-    elif cmd in ["size"]: # show sizes of all revs
-       headers=["disksize", "filesize", "rev", "typ"]
-       print(tabToFMT(FMT, list(each_size5()), headers, formats)) # type: ignore[arg-type]
-       # print(get_sizes())
-    elif cmd in ["nosize"]: # show sizes of all revs with -E '' (default no extension)
-       headers=["disksize", "filesize", "rev", "typ"]
-       print(tabToFMT(FMT, list(each_nosize5()), headers, formats))  # type: ignore[arg-type]
-       # print(get_nosizes())
-    elif cmd in ["nosumsize"]: # show sizes of all revs with -E '' summarized per file history
-       headers=["disksum", "filesum", "changes"]
-       print(tabToFMT(FMT, list(each_nosumsize4()), headers, formats))  # type: ignore[arg-type]
-       # print(get_nosumsizes())
-    elif cmd in ["sumsize"]: # show sizes of all revs summarized per file history
-       headers=["disksum", "filesum", "changes"]
-       print(tabToFMT(FMT, list(each_sumsize4()), headers, formats))  # type: ignore[arg-type]
-       # print(get_sumsizes())
-    elif cmd in ["extsize"]: # show sizes of all revs summarized per file extension and history
-       headers=["disksum", "filesum", "changes","ext", "files"]
-       print(tabToFMT(FMT, list(each_extsize4()), headers, formats))  # type: ignore[arg-type]
-       # print(get_extsizes())
-    elif cmd in ["noext"]: # show files with no extension as show on 'extsizes'
-       print(tabToFMT(FMT, list(each_noext1())))  # type: ignore[arg-type]
-       # print(get_noexts())
+    elif cmd in ["help"]:  # this help screen
+        print(get_help())
+    elif cmd in ["size"]:  # show sizes of all revs
+        headers = ["disksize", "filesize", "rev", "typ"]
+        print(tabToFMT(FMT, list(each_size5()), headers, formats))  # type: ignore[arg-type]
+        # print(get_sizes())
+    elif cmd in ["nosize"]:  # show sizes of all revs with -E '' (default no extension)
+        headers = ["disksize", "filesize", "rev", "typ"]
+        print(tabToFMT(FMT, list(each_nosize5()), headers, formats))  # type: ignore[arg-type]
+        # print(get_nosizes())
+    elif cmd in ["nosumsize"]:  # show sizes of all revs with -E '' summarized per file history
+        headers = ["disksum", "filesum", "changes"]
+        print(tabToFMT(FMT, list(each_nosumsize4()), headers, formats))  # type: ignore[arg-type]
+        # print(get_nosumsizes())
+    elif cmd in ["sumsize"]:  # show sizes of all revs summarized per file history
+        headers = ["disksum", "filesum", "changes"]
+        print(tabToFMT(FMT, list(each_sumsize4()), headers, formats))  # type: ignore[arg-type]
+        # print(get_sumsizes())
+    elif cmd in ["extsize"]:  # show sizes of all revs summarized per file extension and history
+        headers = ["disksum", "filesum", "changes", "ext", "files"]
+        print(tabToFMT(FMT, list(each_extsize4()), headers, formats))  # type: ignore[arg-type]
+        # print(get_extsizes())
+    elif cmd in ["noext"]:  # show files with no extension as show on 'extsizes'
+        print(tabToFMT(FMT, list(each_noext1())))  # type: ignore[arg-type]
+        # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
-       print(get_nosizes(exts = cmd[1:]))
+        print(get_nosizes(exts=cmd[1:]))
     elif "." in cmd:
-       print(get_nosumsizes(exts = cmd))
+        print(get_nosumsizes(exts=cmd))
     elif F"get_{name}" in globals():
         methodcall = globals()[F"get_{name}"]
         print(methodcall())
@@ -562,5 +565,3 @@ if __name__ == "__main__":
         run(args[0], args[1:])
     else:
         print(get_help())
-
-
