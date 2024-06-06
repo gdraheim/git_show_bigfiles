@@ -399,7 +399,7 @@ def each_extsize5() -> Iterator[ExtSize5]:
     dchanges: Dict[str, Dict[str, List[int]]] = {}
     for disksum, filesum, changes, name, diskchanges in each_sumsize5():
         if not name: continue
-        logg.error("sum disk %s size %s", disksum, filesum)
+        logg.debug("sum disk %s size %s", disksum, filesum)
         filename = fs.basename(name)
         nam, ext = map_splitext(filename)
         if ext not in filesums:
@@ -461,7 +461,7 @@ def get_noexts() -> str:
 def each_noext1() -> Iterator[NoExt1]:
     noext = []
     for disksum, filesum, changes, ext, names in each_extsize5():
-        logg.error("ext '%s'", ext)
+        logg.debug("ext '%s'", ext)
         if fnmatch(ext, EXT):
             noext = names.split("|")
             logg.debug("found %s noext", len(noext))
