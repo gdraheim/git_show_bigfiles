@@ -360,14 +360,14 @@ def get_sumsizes() -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
 def each_sumsize4() -> Iterator[SumSize4]:
     for disk, sum, changes, name, parts in each_sumsize5():
-        logg.error("sum disk %s size %s", disk, sum)
+        logg.debug("sum disk %s size %s", disk, sum)
         yield SumSize4(disk, sum, changes, name)
 def each_sumsize5() -> Iterator[SumSize5]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, List[int]] = {}
     for rev, type, disk, size, name in each_size5():
-        logg.error("disk %s size %s", disk, size)
+        logg.debug("disk %s size %s", disk, size)
         if not name: continue
         if type in ["tree"]: continue
         if name not in filesums:
