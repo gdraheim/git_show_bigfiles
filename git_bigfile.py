@@ -310,7 +310,7 @@ def each_size5() -> Iterator[HistSize5]:
     logg.debug("objectnames => %s", objectnames)
     siz = output(F"{git} cat-file --batch-check='%(objectsize:disk) %(objectsize) %(objecttype) %(objectname)'",
                  REPO, input=objectnames)
-    logg.error("cat-file => %s", siz)
+    logg.debug("cat-file => %s", siz)
     for disk1, size1, type1, rev in splits4(siz):
         disks[rev] = int(disk1)
         sizes[rev] = int(size1)
