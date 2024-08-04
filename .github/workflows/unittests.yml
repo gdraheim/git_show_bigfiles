@@ -1,0 +1,43 @@
+name: basic unit tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests:
+    name: 'unit tests'
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: checkout software
+      uses: actions/checkout@v2
+      with:
+        path: software
+    - name: 'refresh install'
+      run: |
+        sudo apt-get update --fix-missing
+    - name: 'install python3 coverage'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-coverage
+    - name: 'install python3 pip'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-pip
+    - name: 'install git'
+      run: |
+        sudo apt-get install git
+    - name: 'install unittest-xml-reporting'
+      run: |
+        pip3 install unittest-xml-reporting
+    - name: 'make tests (tests.py without coverage)'
+      run: |
+        make tests -C software || true
+    - name: 'find xml'
+      run: |
+        find . -name '*.xml'
+    - uses: actions/upload-artifact@v2  # upload test results
+      if: ${{ github.event_name == 'push' && success() }}
+      with:
+        name: test-results
+        path: '**/TEST-*.xml'
