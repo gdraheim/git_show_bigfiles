@@ -4,9 +4,10 @@ PARALLEL = -j2
 PYVERSION = 3.8
 FILES = *.py *.cfg
 PYTHON3 = python3
+COVERAGE3 = ${PYTHON3} -m coverage
 TWINE = twine
 GIT = git
-SCRIPT = git_bigfile.py
+SCRIPT = git_show_bigfiles.py
 
 check:
 	$(PYTHON3) $(SCRIPT:.py=_tests.py) 
@@ -19,6 +20,10 @@ t_%:
 
 d_%:
 	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ -vv -k
+
+cover coverage:
+	$(COVERAGE3) run $(SCRIPT:.py=_tests.py)
+	$(COVERAGE3) report $(SCRIPT)
 
 # ....................................
 version:
@@ -34,6 +39,11 @@ version:
 	@ grep ^__version__ $(FILES) | grep -v _tests.py
 	@ ver=`cat $(SCRIPT) | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
+
+tag:
+	@ ver=`grep "version.*=" setup.cfg | sed -e "s/version *= */v/"` \
+	; rev=`git rev-parse --short HEAD` \
+	; echo ": ${GIT} tag $$ver $$rev"
 
 ############## https://pypi.org/...
 
@@ -63,11 +73,11 @@ ins install:
 	rm -v setup.py
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 show:
-	python3 -m pip show -f $$(sed -e '/^name *=/!d' -e 's/.*= *//' setup.cfg)
-uns uninstall: setup.py
-	$(MAKE) setup.py
-	$(PYTHON3) -m pip uninstall -v --yes $$(sed -e '/^name *=/!d' -e 's/.*= *//' setup.cfg)
-	rm -v setup.py
+	test -d tmp || mkdir -v tmp
+	cd tmp && $(PYTHON3) -m pip show -f $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+uns uninstall: 
+	test -d tmp || mkdir -v tmp
+	cd tmp && $(PYTHON3) -m pip uninstall -v --yes $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
 
 # ...........................................
 mypy:
