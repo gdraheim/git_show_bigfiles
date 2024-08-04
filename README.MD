@@ -15,3 +15,8 @@ and "git cat-file" to inspect the object store. Read more about
 git-plumbing at [git-scm:Git-Internals-Git-Objects](https://git-scm.com/book/en/v2/Git-Internals-Git-Objects)
 
 
+## I take patches!
+
+The code is doing what it had to do. There are surely some features missing.
+
+Please create a ticket.... and dont' forget to create a testcase.
