@@ -83,17 +83,18 @@ Common distro packages are:
 * `make install` 
 * `make uninstalls`
 * `make build` # default build
-* update README.md if necessary
+* `make coverage`
+   * update README.md if necessary
 * `git push` # if necessary
 * wait for github workflows to be okay (if active)
 * prepare a tmp.changes.txt 
-* `git tag -F tmp.changes.txt v1.x` to the version in setup.cfg
+* `make tag`
+   * run shown `git tag -F tmp.changes.txt v1.x` 
 * `git push --tags`
 * update the short description on github
 * consider making a github release with the latest news
 
 ## TODO
 
-* there should be a coverage value 
 * there should be github workflows
 
