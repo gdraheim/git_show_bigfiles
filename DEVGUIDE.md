@@ -93,3 +93,5 @@ Common distro packages are:
 * `git push --tags`
 * update the short description on github
 * consider making a github release with the latest news
+* `make build`
+  * run show `twine ..`
