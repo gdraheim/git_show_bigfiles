@@ -2,7 +2,7 @@
 """ test cases for bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
-__version__ = "1.0.1213"
+__version__ = "1.0.1317"
 
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
 import git_show_bigfiles as app
