@@ -38,7 +38,7 @@ EXT = ""
 FMT = ""
 KB = 1024
 MB = KB * KB
-MAXSIZE = 50.0 # in MB
+MAXSIZE: float = 50.0 # in MB
 
 def str_(obj: Any, no: str = '-') -> str:
     if not obj:
