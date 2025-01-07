@@ -4,25 +4,25 @@
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
 __version__ = "1.0.1317"
 
+# pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,dangerous-default-value,unused-argument,unused-variable,line-too-long,multiple-statements,consider-using-f-string
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
 
 import os
-import sys
 import os.path as fs
+import sys
 import re
 import subprocess
-import zipfile
-import unittest
 from datetime import date as Date
 from datetime import datetime as Time
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from fnmatch import fnmatchcase as fnmatch
 import logging
 logg = logging.getLogger("CHECK")
 
-if sys.version[0] == '3':
-    basestring = str
-    xrange = range
+if sys.version[0] == '2':
+    stringtypes = basestring # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
+else:
+    stringtypes = str # pylint: disable=invalid-name
 
 try:
     from cStringIO import StringIO  # type: ignore[import, attr-defined]
@@ -57,49 +57,48 @@ def str_(obj: Any, no: str = '-') -> str:
     return text
 
 def decodes(text: Union[bytes, str]) -> str:
-    if text is None: return None
     if isinstance(text, bytes):
         encoded = sys.getdefaultencoding()
         if encoded in ["ascii"]:
             encoded = "utf-8"
         try:
             return text.decode(encoded)
-        except:
+        except UnicodeDecodeError:
             return text.decode("latin-1")
-    return text
-def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> str:
-    if isinstance(cmd, basestring):
+    return text # works for None as well
+def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, data: Optional[str] = None) -> str:
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if input is not None:
+    if data is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(input.encode("utf-8"))
+        out, err = run.communicate(data.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> Tuple[str, int]:
-    if isinstance(cmd, basestring):
+def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, data: Optional[str] = None) -> Tuple[str, int]:
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if input is not None:
+    if data is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(input.encode("utf-8"))
+        out, err = run.communicate(data.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> Tuple[str, str, int]:
-    if isinstance(cmd, basestring):
+def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, data: Optional[str] = None) -> Tuple[str, str, int]:
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if input is not None:
+    if data is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(input.encode("utf-8"))
+        out, err = run.communicate(data.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = run.communicate()
@@ -172,18 +171,18 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
             if formatnumber.search(formats[col]):
                 return True
         return False
-    def format(name: str, val: JSONItem) -> str:
+    def format(name: str, val: JSONItem) -> str:  # pylint: disable=redefined-builtin
         if name in formats:
             fmt4 = formats[name]
             if "{:" in fmt4:
                 try:
                     return fmt4.format(val)
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logg.debug("format <%s> does not apply: %s", fmt, e)
             if "%s" in fmt4:
                 try:
                     return fmt % strJSON(val)
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logg.debug("format <%s> does not apply: %s", fmt, e)
         if isinstance(val, float):
             return floatfmt % val
@@ -246,7 +245,7 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
     # CSV
     if fmt in ["list", "csv", "scsv", "xlsx", "xls", "tab", "dat", "ifs", "data"]:
         tab1 = tab if tab else ";"
-        import csv
+        import csv  # pylint: disable=import-outside-toplevel
         csvfile = StringIO()
         writer = csv.DictWriter(csvfile, fieldnames=sorted(cols.keys(), key=sortkey),
                                 restval='~', quoting=csv.QUOTE_MINIMAL, delimiter=tab1)
@@ -309,7 +308,7 @@ def each_size5() -> Iterator[HistSize5]:
     objectnames = "\n".join(revs.keys()) + "\n"
     logg.debug("objectnames => %s", objectnames)
     siz = output(F"{git} cat-file --batch-check='%(objectsize:disk) %(objectsize) %(objecttype) %(objectname)'",
-                 REPO, input=objectnames)
+                 REPO, data=objectnames)
     logg.debug("cat-file => %s", siz)
     for disk1, size1, type1, rev in splits4(siz):
         disks[rev] = int(disk1)
@@ -325,12 +324,12 @@ def get_nosizes(exts: Optional[str] = None) -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_nosize5(exts=exts))
 def each_nosize5(exts: Optional[str] = None) -> Iterator[HistSize5]:
     extlist = exts.split(",") if exts is not None else EXT.split(",")
-    for rev, type, disk, size, name in each_size5():
-        if type in ["tree"]: continue
+    for rev, typ, disk, size, name in each_size5():
+        if typ in ["tree"]: continue
         nam, ext = map_splitext(name)
         for pat in extlist:
             if fnmatch(ext, pat):
-                yield HistSize5(rev, type, disk, size, name)
+                yield HistSize5(rev, typ, disk, size, name)
                 break
 
 class SumSize4(NamedTuple):
@@ -349,27 +348,27 @@ def get_nosumsizes(exts: Optional[str] = None) -> str:
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
 def each_nosumsize4(exts: Optional[str] = None) -> Iterator[SumSize4]:
     extlist = exts.split(",") if exts is not None else EXT.split(",")
-    for sum, disk, changes, name, parts in each_sumsize5():
+    for sums, disk, changes, name, parts in each_sumsize5():
         nam, ext = map_splitext(name)
         for pat in extlist:
             if fnmatch(ext, pat):
-                yield SumSize4(sum, disk, changes, name)
+                yield SumSize4(sums, disk, changes, name)
                 break
 def get_sumsizes() -> str:
     sumsizes = sorted(list(each_sumsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in item]) for item in sumsizes)
 def each_sumsize4() -> Iterator[SumSize4]:
-    for disk, sum, changes, name, parts in each_sumsize5():
-        logg.debug("sum disk %s size %s", disk, sum)
-        yield SumSize4(disk, sum, changes, name)
+    for disk, sums, changes, name, parts in each_sumsize5():
+        logg.debug("sum disk %s size %s", disk, sums)
+        yield SumSize4(disk, sums, changes, name)
 def each_sumsize5() -> Iterator[SumSize5]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, List[int]] = {}
-    for rev, type, disk, size, name in each_size5():
+    for rev, typ, disk, size, name in each_size5():
         logg.debug("disk %s size %s", disk, size)
         if not name: continue
-        if type in ["tree"]: continue
+        if typ in ["tree"]: continue
         if name not in filesums:
             disksums[name] = 0
             filesums[name] = 0
@@ -391,8 +390,8 @@ def get_extsizes() -> str:
     sumsizes = sorted(list(each_extsize4()), key=lambda x: x[0])
     return "\n".join(" ".join([str_(elem) for elem in list(item)]) for item in sumsizes)
 def each_extsize4() -> Iterator[ExtSize5]:
-    for sum, disk, changes, ext, names in each_extsize5():
-        yield ExtSize5(sum, disk, changes, ext, "%s/files" % names.count("|"))
+    for sums, disk, changes, ext, names in each_extsize5():
+        yield ExtSize5(sums, disk, changes, ext, "%s/files" % names.count("|"))
 def each_extsize5() -> Iterator[ExtSize5]:
     disksums: Dict[str, int] = {}
     filesums: Dict[str, int] = {}
@@ -414,7 +413,7 @@ def each_extsize5() -> Iterator[ExtSize5]:
     for ext, disksum in disksums.items():
         yield ExtSize5(disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext]))
 
-mapping = """
+MAPPINGS = """
 jenkinsfile= */Jenkinsfile
 jenkinsfile= */Jenkinsfile_*
 jenkinsfile= */Error_Jenkinsfile
@@ -437,7 +436,7 @@ exe.datasync = */DataSync_debug
 
 def map_ext(name: str, ext: str) -> str:
     if not ext:
-        for line in mapping.splitlines():
+        for line in MAPPINGS.splitlines():
             if "=" in line:
                 mapped1, pattern1 = line.split("=", 1)
                 mapped, pattern = mapped1.strip(), pattern1.strip()
@@ -478,7 +477,7 @@ def get_help() -> str:
             text += "   " + txt.rstrip().replace("#", "") + "\n"
     return text + __doc__
 
-def run(cmd: str, args: List[str]) -> None:
+def _main(cmd: str, args: List[str]) -> None:
     if PRETTY:
         formats = {"disksum": " {:_}", "filesum": " {:_}", "changes": " "}
     else:
@@ -521,26 +520,26 @@ def run(cmd: str, args: List[str]) -> None:
         print(methodcall())
 
 if __name__ == "__main__":
-    from optparse import OptionParser
-    _o = OptionParser("%prog [options] test*",
-                      epilog=__doc__.strip().split("\n")[0])
-    _o.add_option("-v", "--verbose", action="count", default=0,
-                  help="increase logging level [%default]")
-    _o.add_option("-g", "--git", metavar="EXE", default=GIT,
-                  help="use different git client [%default]")
-    _o.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
-                  help="use different def branch [%default]")
-    _o.add_option("-r", "--repo", metavar="PATH", default=REPO,
-                  help="use different repo path [%default]")
-    _o.add_option("-l", "--logfile", metavar="FILE", default="",
-                  help="additionally save the output log to a file [%default]")
-    _o.add_option("-P", "--pretty", action="store_true", default=False,
-                  help="enhanced value results [%default]")
-    _o.add_option("-E", "--ext", metavar="EXT", default=EXT,
-                  help="show nolist for this ext [%default]")
-    _o.add_option("-o", "--fmt", metavar="md|text|csv", default=FMT,
-                  help="use differen tabtotext [%default]")
-    opt, args = _o.parse_args()
+    from optparse import OptionParser # pylint: disable=deprecated-module
+    cmdline = OptionParser("%prog [options] test*",
+                      epilog=__doc__.strip().split("\n", 1)[0])
+    cmdline.add_option("-v", "--verbose", action="count", default=0,
+                      help="increase logging level [%default]")
+    cmdline.add_option("-g", "--git", metavar="EXE", default=GIT,
+                      help="use different git client [%default]")
+    cmdline.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
+                      help="use different def branch [%default]")
+    cmdline.add_option("-r", "--repo", metavar="PATH", default=REPO,
+                      help="use different repo path [%default]")
+    cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
+                      help="additionally save the output log to a file [%default]")
+    cmdline.add_option("-P", "--pretty", action="store_true", default=False,
+                      help="enhanced value results [%default]")
+    cmdline.add_option("-E", "--ext", metavar="EXT", default=EXT,
+                      help="show nolist for this ext [%default]")
+    cmdline.add_option("-o", "--fmt", metavar="md|text|csv", default=FMT,
+                      help="use differen tabtotext [%default]")
+    opt, cmdline_args = cmdline.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     GIT = opt.git
@@ -551,17 +550,17 @@ if __name__ == "__main__":
     FMT = opt.fmt
     logg.debug("BRANCH %s REPO %s", BRANCH, REPO)
     #
-    logfile = None
+    _logfile = None  # pylint: disable=invalid-name
     if opt.logfile:
         if os.path.exists(opt.logfile):
             os.remove(opt.logfile)
-        logfile = logging.FileHandler(opt.logfile)
-        logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
-        logging.getLogger().addHandler(logfile)
+        _logfile = logging.FileHandler(opt.logfile)
+        _logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
+        logging.getLogger().addHandler(_logfile)
         logg.info("log diverted to %s", opt.logfile)
     #
-    logg.debug("args %s", args)
-    if args:
-        run(args[0], args[1:])
+    logg.debug("args %s", cmdline_args)
+    if cmdline_args:
+        _main(cmdline_args[0], cmdline_args[1:])
     else:
         print(get_help())
