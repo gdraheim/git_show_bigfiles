@@ -116,17 +116,21 @@ def splits2(inp: str) -> Iterator[Tuple[str, str]]:
 
 def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
     for line in inp:
-        if " " in line:
+        if line.count(" ") >= 2:
             a, b, c = line.split(" ", 2)
             yield a, b, c.strip()
+        elif " " in line:
+            logg.warning("can not split3: %s", line.rstrip())
 def splits3(inp: str) -> Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
 def split4(inp: Iterable[str]) -> Iterator[Tuple[str, str, str, str]]:
     for line in inp:
-        if " " in line:
+        if line.count(" ") >= 3:
             a, b, c, d = line.split(" ", 3)
             yield a, b, c, d.strip()
+        elif " " in line:
+            logg.warning("can not split4: %s", line.rstrip())
 def splits4(inp: str) -> Iterator[Tuple[str, str, str, str]]:
     for a, b, c, d in split4(inp.splitlines()):
         yield a, b, c, d
