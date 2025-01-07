@@ -4,8 +4,8 @@
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
 __version__ = "1.0.1317"
 
+# pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,dangerous-default-value,unused-argument,unused-variable,line-too-long,multiple-statements,consider-using-f-string
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
-import git_show_bigfiles as app
 
 import os
 import sys
@@ -18,11 +18,15 @@ from fnmatch import fnmatchcase as fnmatch
 import shutil
 import random
 import logging
+#
+import git_show_bigfiles as app
+
 logg = logging.getLogger("TESTING")
 
-if sys.version[0] == '3':
-    basestring = str
-    xrange = range
+if sys.version[0] == '2':
+    stringtypes = basestring # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
+else:
+    stringtypes = str # pylint: disable=invalid-name
 
 try:
     from cStringIO import StringIO  # type: ignore[import, attr-defined]
@@ -37,61 +41,60 @@ KB = 1024
 MB = KB * KB
 
 def decodes(text: Union[bytes, str]) -> str:
-    if text is None: return None
     if isinstance(text, bytes):
         encoded = sys.getdefaultencoding()
         if encoded in ["ascii"]:
             encoded = "utf-8"
         try:
             return text.decode(encoded)
-        except:
+        except UnicodeDecodeError:
             return text.decode("latin-1")
-    return text
+    return text # also for None
 def sh____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.check_call(cmd, cwd=cwd, shell=shell)
 def sx____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, cwd=cwd, shell=shell)
-def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> str:
-    if isinstance(cmd, basestring):
+def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> str:
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if input is not None:
+    if pipe is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(input.encode("utf-8"))
+        out, err = run.communicate(pipe.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> Tuple[str, int]:
-    if isinstance(cmd, basestring):
+def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> Tuple[str, int]:
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if input is not None:
+    if pipe is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(input.encode("utf-8"))
+        out, err = run.communicate(pipe.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, input: Optional[str] = None) -> Tuple[str, str, int]:
-    if isinstance(cmd, basestring):
+def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> Tuple[str, str, int]:
+    if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if input is not None:
+    if pipe is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(input.encode("utf-8"))
+        out, err = run.communicate(pipe.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = run.communicate()
@@ -253,7 +256,7 @@ class GitBigfileTest(unittest.TestCase):
             if name in ("a.txt", "b.zip"):
                 revs[rev] = name
         siz = output(F"{git} cat-file --batch-check='%(objectsize) %(objecttype) %(objectname)'",
-                     testdir, input="\n".join(revs.keys()))
+                     testdir, pipe="\n".join(revs.keys()))
         for siz, typ, rev in splits3(siz):
             name = revs[rev]
             sizes[name] = int(siz)
@@ -422,9 +425,9 @@ class GitBigfileTest(unittest.TestCase):
         if not KEEP: self.rm_testdir()
 
 if __name__ == "__main__":
-    from optparse import OptionParser
+    from optparse import OptionParser # pylint: disable=deprecated-module
     _o = OptionParser("%prog [options] test*",
-                      epilog=__doc__.strip().split("\n")[0])
+                      epilog=__doc__.strip().split("\n", 1)[0])
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="increase logging level [%default]")
     _o.add_option("-g", "--git", metavar="EXE", default=GIT,
@@ -439,32 +442,26 @@ if __name__ == "__main__":
                   help="Stop the test run on the first error or failure. [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
                   help="capture results as a junit xml file [%default]")
-    opt, args = _o.parse_args()
+    opt, cmdline_args = _o.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     KEEP = opt.keep
     GIT = opt.git
     BRANCH = opt.branch
     #
-    logfile = None
+    LOGFILE = None
     if opt.logfile:
         if os.path.exists(opt.logfile):
             os.remove(opt.logfile)
-        logfile = logging.FileHandler(opt.logfile)
-        logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
-        logging.getLogger().addHandler(logfile)
+        LOGFILE = logging.FileHandler(opt.logfile)
+        LOGFILE.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
+        logging.getLogger().addHandler(LOGFILE)
         logg.info("log diverted to %s", opt.logfile)
-    xmlresults = None
-    if opt.xmlresults:
-        if os.path.exists(opt.xmlresults):
-            os.remove(opt.xmlresults)
-        xmlresults = open(opt.xmlresults, "w")
-        logg.info("xml results into %s", opt.xmlresults)
     #
     # unittest.main()
     suite = unittest.TestSuite()
-    if not args: args = ["test_*"]
-    for arg in args:
+    if not cmdline_args: cmdline_args = ["test_*"]
+    for arg in cmdline_args:
         for classname in sorted(globals()):
             if not classname.endswith("Test"):
                 continue
@@ -476,18 +473,18 @@ if __name__ == "__main__":
                 if fnmatch(method, arg):
                     suite.addTest(testclass(method))
     # select runner
-    xmlresults = None
+    XMLFILE = None
     if opt.xmlresults:
         if os.path.exists(opt.xmlresults):
             os.remove(opt.xmlresults)
-        xmlresults = open(opt.xmlresults, "wb")  # type: ignore[assignment]
+        XMLFILE = open(opt.xmlresults, "wb")  # type: ignore[assignment]
         logg.info("xml results into %s", opt.xmlresults)
-    if xmlresults:
-        import xmlrunner  # type: ignore
+    if XMLFILE:
+        import xmlrunner  # type: ignore # pylint: disable=import-error
         Runner = xmlrunner.XMLTestRunner
-        result = Runner(xmlresults).run(suite)
+        RESULT = Runner(XMLFILE).run(suite)
     else:
         Runner = unittest.TextTestRunner
-        result = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
-    if not result.wasSuccessful():
+        RESULT = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
+    if not RESULT.wasSuccessful():
         sys.exit(1)
