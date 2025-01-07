@@ -38,6 +38,7 @@ EXT = ""
 FMT = ""
 KB = 1024
 MB = KB * KB
+MAXSIZE = 50.0 # in MB
 
 def str_(obj: Any, no: str = '-') -> str:
     if not obj:
@@ -66,39 +67,39 @@ def decodes(text: Union[bytes, str]) -> str:
         except UnicodeDecodeError:
             return text.decode("latin-1")
     return text # works for None as well
-def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, data: Optional[str] = None) -> str:
+def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> str:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if data is not None:
+    if pipe is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(data.encode("utf-8"))
+        out, err = run.communicate(pipe.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, data: Optional[str] = None) -> Tuple[str, int]:
+def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> Tuple[str, int]:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if data is not None:
+    if pipe is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(data.encode("utf-8"))
+        out, err = run.communicate(pipe.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, data: Optional[str] = None) -> Tuple[str, str, int]:
+def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> Tuple[str, str, int]:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    if data is not None:
+    if pipe is not None:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = run.communicate(data.encode("utf-8"))
+        out, err = run.communicate(pipe.encode("utf-8"))
     else:
         run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = run.communicate()
@@ -308,7 +309,7 @@ def each_size5() -> Iterator[HistSize5]:
     objectnames = "\n".join(revs.keys()) + "\n"
     logg.debug("objectnames => %s", objectnames)
     siz = output(F"{git} cat-file --batch-check='%(objectsize:disk) %(objectsize) %(objecttype) %(objectname)'",
-                 REPO, data=objectnames)
+                 REPO, pipe=objectnames)
     logg.debug("cat-file => %s", siz)
     for disk1, size1, type1, rev in splits4(siz):
         disks[rev] = int(disk1)
@@ -331,6 +332,12 @@ def each_nosize5(exts: Optional[str] = None) -> Iterator[HistSize5]:
             if fnmatch(ext, pat):
                 yield HistSize5(rev, typ, disk, size, name)
                 break
+def get_oversize() -> str:
+    return "\n".join(" ".join([str_(elem) for elem in item]) for item in each_oversize5())
+def each_oversize5() -> Iterator[HistSize5]:
+    for rev, typ, disk, size, name in each_size5():
+        if size >= MAXSIZE * MB:
+            yield HistSize5(rev, typ, disk, size, name)
 
 class SumSize4(NamedTuple):
     disksum: int
@@ -380,6 +387,30 @@ def each_sumsize5() -> Iterator[SumSize5]:
         yield SumSize5(disksum, filesums[name], len(dchanges[name]), name,
                        "|" + "+".join([str(item) for item in dchanges[name]]))
 
+def each_sumoversize4() -> Iterator[SumSize4]:
+    for disk, sums, changes, name, parts in each_sumoversize5():
+        logg.debug("sum disk %s size %s (over %i MB)", disk, sums, MAXSIZE)
+        yield SumSize4(disk, sums, changes, name)
+def each_sumoversize5() -> Iterator[SumSize5]:
+    disksums: Dict[str, int] = {}
+    filesums: Dict[str, int] = {}
+    dchanges: Dict[str, List[int]] = {}
+    for rev, typ, disk, size, name in each_size5():
+        if size < MAXSIZE * MB: continue
+        logg.debug("disk %s size %s (over %i MB)", disk, size, MAXSIZE)
+        if not name: continue
+        if typ in ["tree"]: continue
+        if name not in filesums:
+            disksums[name] = 0
+            filesums[name] = 0
+            dchanges[name] = []
+        filesums[name] += size
+        disksums[name] += disk
+        dchanges[name] += [disk]
+    for name, disksum in disksums.items():
+        yield SumSize5(disksum, filesums[name], len(dchanges[name]), name,
+                       "|" + "+".join([str(item) for item in dchanges[name]]))
+
 class ExtSize5(NamedTuple):
     disksum: int
     filesum: int
@@ -399,6 +430,30 @@ def each_extsize5() -> Iterator[ExtSize5]:
     for disksum, filesum, changes, name, diskchanges in each_sumsize5():
         if not name: continue
         logg.debug("sum disk %s size %s", disksum, filesum)
+        filename = fs.basename(name)
+        nam, ext = map_splitext(filename)
+        if ext not in filesums:
+            disksums[ext] = 0
+            filesums[ext] = 0
+            dchanges[ext] = {}
+        if name not in dchanges[ext]:
+            dchanges[ext][name] = []
+        filesums[ext] += filesum
+        disksums[ext] += disksum
+        dchanges[ext][name] += [disksum]
+    for ext, disksum in disksums.items():
+        yield ExtSize5(disksum, filesums[ext], len(dchanges[ext]), ext, "|" + "|".join(dchanges[ext]))
+
+def each_extoversize4() -> Iterator[ExtSize5]:
+    for sums, disk, changes, ext, names in each_extoversize5():
+        yield ExtSize5(sums, disk, changes, ext, "%s/files" % names.count("|"))
+def each_extoversize5() -> Iterator[ExtSize5]:
+    disksums: Dict[str, int] = {}
+    filesums: Dict[str, int] = {}
+    dchanges: Dict[str, Dict[str, List[int]]] = {}
+    for disksum, filesum, changes, name, diskchanges in each_sumoversize5():
+        if not name: continue
+        logg.debug("sum disk %s size %s (over %i MB)", disksum, filesum, MAXSIZE)
         filename = fs.basename(name)
         nam, ext = map_splitext(filename)
         if ext not in filesums:
@@ -488,6 +543,10 @@ def _main(cmd: str, args: List[str]) -> None:
         methodcall()
     elif cmd in ["help"]:  # this help screen
         print(get_help())
+    elif cmd in ["oversize"]:  # show files in all revs with sizes over lfs limit
+        headers = ["disksize", "filesize", "rev", "typ"]
+        print(tabToFMT(FMT, list(each_oversize5()), headers, formats))  # type: ignore[arg-type]
+        # print(get_oversize())
     elif cmd in ["size"]:  # show sizes of all revs
         headers = ["disksize", "filesize", "rev", "typ"]
         print(tabToFMT(FMT, list(each_size5()), headers, formats))  # type: ignore[arg-type]
@@ -504,6 +563,14 @@ def _main(cmd: str, args: List[str]) -> None:
         headers = ["disksum", "filesum", "changes"]
         print(tabToFMT(FMT, list(each_sumsize4()), headers, formats))  # type: ignore[arg-type]
         # print(get_sumsizes())
+    elif cmd in ["sumoversize"]:  # show sizes of all revs with oversize files summarized per file history
+        headers = ["disksum", "filesum", "changes"]
+        print(tabToFMT(FMT, list(each_sumoversize4()), headers, formats))  # type: ignore[arg-type]
+        # print(get_sumsizes())
+    elif cmd in ["extoversize"]:  # show ext with oversize files and summarize over history
+        headers = ["disksum", "filesum", "changes", "ext", "files"]
+        print(tabToFMT(FMT, list(each_extoversize4()), headers, formats))  # type: ignore[arg-type]
+        # print(get_extoversizes())
     elif cmd in ["extsize"]:  # show sizes of all revs summarized per file extension and history
         headers = ["disksum", "filesum", "changes", "ext", "files"]
         print(tabToFMT(FMT, list(each_extsize4()), headers, formats))  # type: ignore[arg-type]
@@ -523,6 +590,7 @@ if __name__ == "__main__":
     from optparse import OptionParser # pylint: disable=deprecated-module
     cmdline = OptionParser("%prog [options] test*",
                       epilog=__doc__.strip().split("\n", 1)[0])
+    cmdline.formatter.max_help_position = 28
     cmdline.add_option("-v", "--verbose", action="count", default=0,
                       help="increase logging level [%default]")
     cmdline.add_option("-g", "--git", metavar="EXE", default=GIT,
@@ -533,6 +601,8 @@ if __name__ == "__main__":
                       help="use different repo path [%default]")
     cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
                       help="additionally save the output log to a file [%default]")
+    cmdline.add_option("-x", "--maxsize", metavar="MB", default=MAXSIZE,
+                      help="oversize files (in MB) must be in lfs [%default]")
     cmdline.add_option("-P", "--pretty", action="store_true", default=False,
                       help="enhanced value results [%default]")
     cmdline.add_option("-E", "--ext", metavar="EXT", default=EXT,
@@ -545,6 +615,7 @@ if __name__ == "__main__":
     GIT = opt.git
     BRANCH = opt.branch
     REPO = opt.repo or None
+    MAXSIZE = float(opt.maxsize)
     PRETTY = opt.pretty
     EXT = opt.ext
     FMT = opt.fmt
