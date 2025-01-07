@@ -588,23 +588,24 @@ class GitBigfileTest(unittest.TestCase):
 
 if __name__ == "__main__":
     from optparse import OptionParser # pylint: disable=deprecated-module
-    _o = OptionParser("%prog [options] test*",
+    cmdline = OptionParser("%prog [options] test*",
                       epilog=__doc__.strip().split("\n", 1)[0])
-    _o.add_option("-v", "--verbose", action="count", default=0,
-                  help="increase logging level [%default]")
-    _o.add_option("-g", "--git", metavar="EXE", default=GIT,
-                  help="use different git client [%default]")
-    _o.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
-                  help="use different def branch [%default]")
-    _o.add_option("-k", "--keep", action="count", default=0,
-                  help="keep docker build container [%default]")
-    _o.add_option("-l", "--logfile", metavar="FILE", default="",
-                  help="additionally save the output log to a file [%default]")
-    _o.add_option("--failfast", action="store_true", default=False,
-                  help="Stop the test run on the first error or failure. [%default]")
-    _o.add_option("--xmlresults", metavar="FILE", default=None,
-                  help="capture results as a junit xml file [%default]")
-    opt, cmdline_args = _o.parse_args()
+    cmdline.formatter.max_help_position = 28
+    cmdline.add_option("-v", "--verbose", action="count", default=0,
+                      help="increase logging level [%default]")
+    cmdline.add_option("-g", "--git", metavar="EXE", default=GIT,
+                      help="use different git client [%default]")
+    cmdline.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
+                      help="use different def branch [%default]")
+    cmdline.add_option("-k", "--keep", action="count", default=0,
+                      help="keep docker build container [%default]")
+    cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
+                      help="additionally save the output log to a file [%default]")
+    cmdline.add_option("--failfast", action="store_true", default=False,
+                      help="Stop the test run on the first error or failure. [%default]")
+    cmdline.add_option("--xmlresults", metavar="FILE", default=None,
+                      help="capture results as a junit xml file [%default]")
+    opt, cmdline_args = cmdline.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     KEEP = opt.keep
