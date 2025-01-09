@@ -290,6 +290,36 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
     return "\n".join(lines) + "\n"
 
 # ..............................................................
+class HistMail(NamedTuple):
+    author: str
+    committer: str
+
+def each_mail() -> Iterator[str]:
+    emails: List[str] = []
+    for mail in each_mail2():
+        if mail.author not in emails:
+            emails.append(mail.author)
+            yield mail.author
+        if mail.committer not in mail:
+            emails.append(mail.committer)
+            yield mail.committer
+def each_mail2() -> Iterator[HistMail]:
+    git, main = GIT, BRANCH
+    out = output(F"{git} rev-list '--pretty=;%ae;%ce' {main} ", REPO)
+    revs: Dict[str, str] = OrderedDict()
+    disks: Dict[str, int] = {}
+    sizes: Dict[str, int] = {}
+    types: Dict[str, str] = {}
+    for line in out.splitlines():
+        if line.startswith(";"):
+            mails = line.strip().split(";")
+            author = mails[0] if len(mails) >=1 else ""
+            committer = mails[1] if len(mails) else ""
+            yield HistMail(author, committer)
+
+
+
+# ..............................................................
 class HistSize5(NamedTuple):
     rev: str
     typ: str
@@ -342,6 +372,22 @@ def each_oversize5() -> Iterator[HistSize5]:
     for rev, typ, disk, size, name in each_size5():
         if size >= MAXSIZE * MB:
             yield HistSize5(rev, typ, disk, size, name)
+
+def each_gitfile() -> Iterator[str]:
+    found = []
+    for elem in each_size5():
+        if "/.git/" in elem.name:
+            if elem.name not in found:
+                found.append(elem.name)
+                yield elem.name
+def each_gitdir() -> Iterator[str]:
+    found = []
+    for elem in each_size5():
+        if "/.git/" in elem.name:
+            gitpath = re.sub("/[.]git/.*", "", elem.name)
+            if gitpath not in found:
+                found.append(gitpath)
+                yield gitpath
 
 class SumSize4(NamedTuple):
     disksum: int
@@ -581,6 +627,12 @@ def _main(cmd: str, args: List[str]) -> None:
         # print(get_extsizes())
     elif cmd in ["noext"]:  # show files with no extension as show on 'extsizes'
         print(tabToFMT(FMT, list(each_noext1())))  # type: ignore[arg-type]
+        # print(get_noexts())
+    elif cmd in ["git", "gitlist"]:  # show /.git/ paths having files (for migrations)
+        print(tabToFMT(FMT, list(each_gitdir())))  # type: ignore[arg-type]
+        # print(get_noexts())
+    elif cmd in ["mail", "emails", "emaillist"]:  # show list of authors and committers (for migrations)
+        print(tabToFMT(FMT, list(each_mail())))  # type: ignore[arg-type]
         # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
         print(get_nosizes(exts=cmd[1:]))
