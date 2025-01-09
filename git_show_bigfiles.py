@@ -297,20 +297,22 @@ class HistAuthor4(NamedTuple):
     author: str
     committername: str
     committer: str
-class Author(NamedTuple):
+class Author2(NamedTuple):
     email: str
-class Committer(NamedTuple):
+    name: str
+class Committer2(NamedTuple):
     email: str
+    name: str
 
-def each_mail() -> Iterator[Union[Author, Committer]]:
+def each_mail2() -> Iterator[Union[Author2, Committer2]]:
     emails: List[str] = []
     for mail in each_author4():
         if mail.author not in emails:
             emails.append(mail.author)
-            yield Author(mail.author)
+            yield Author2(mail.author, mail.authorname)
         if mail.committer not in mail:
             emails.append(mail.committer)
-            yield Committer(mail.committer)
+            yield Committer2(mail.committer, mail.committername)
 def each_author4() -> Iterator[HistAuthor4]:
     git, main = GIT, BRANCH
     out = output(F"{git} rev-list '--pretty=;%an;%ae;%cn;%ce' {main} ", REPO)
@@ -394,7 +396,7 @@ def each_gitdir() -> Iterator[str]:
     found = []
     for elem in each_size5():
         if "/.git/" in elem.name:
-            gitpath = re.sub("/[.]git/.*", "", elem.name)
+            gitpath = re.sub("/[.]git/.*", "/.git", elem.name)
             if gitpath not in found:
                 found.append(gitpath)
                 yield gitpath
@@ -641,8 +643,10 @@ def _main(cmd: str, args: List[str]) -> None:
     elif cmd in ["git", "gitlist"]:  # show /.git/ paths having files (for migrations)
         print(tabToFMT(FMT, list(each_gitdir())))  # type: ignore[arg-type]
         # print(get_noexts())
+    elif cmd in ["authors", "authorlist"]:  # show list of authors and committers (for migrations)
+        print(tabToFMT(FMT, list(each_author4())))  # type: ignore[arg-type]
     elif cmd in ["mail", "emails", "emaillist"]:  # show list of authors and committers (for migrations)
-        print(tabToFMT(FMT, list(each_mail())))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, list(each_mail2())))  # type: ignore[arg-type]
         # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
         print(get_nosizes(exts=cmd[1:]))
