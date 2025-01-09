@@ -204,6 +204,8 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
     def asdict(item: JSONDict) -> JSONDict:
         if hasattr(item, "_asdict"):
             return item._asdict()  # type: ignore[attr-defined, union-attr, no-any-return, arg-type]
+        if isinstance(item, stringtypes):
+            return { "value": item}
         return item
     cols: Dict[str, int] = {}
     for item in result:
