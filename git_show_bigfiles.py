@@ -290,22 +290,28 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
     return "\n".join(lines) + "\n"
 
 # ..............................................................
-class HistMail(NamedTuple):
+class HistAuthor4(NamedTuple):
+    authorname: str
     author: str
+    committername: str
     committer: str
+class Author(NamedTuple):
+    email: str
+class Committer(NamedTuple):
+    email: str
 
-def each_mail() -> Iterator[str]:
+def each_mail() -> Iterator[Union[Author, Committer]]:
     emails: List[str] = []
-    for mail in each_mail2():
+    for mail in each_author4():
         if mail.author not in emails:
             emails.append(mail.author)
-            yield mail.author
+            yield Author(mail.author)
         if mail.committer not in mail:
             emails.append(mail.committer)
-            yield mail.committer
-def each_mail2() -> Iterator[HistMail]:
+            yield Author(mail.committer)
+def each_author4() -> Iterator[HistAuthor4]:
     git, main = GIT, BRANCH
-    out = output(F"{git} rev-list '--pretty=;%ae;%ce' {main} ", REPO)
+    out = output(F"{git} rev-list '--pretty=;%an;%ae;%cn;%ce' {main} ", REPO)
     revs: Dict[str, str] = OrderedDict()
     disks: Dict[str, int] = {}
     sizes: Dict[str, int] = {}
@@ -313,9 +319,11 @@ def each_mail2() -> Iterator[HistMail]:
     for line in out.splitlines():
         if line.startswith(";"):
             mails = line.strip().split(";")
-            author = mails[0] if len(mails) >=1 else ""
-            committer = mails[1] if len(mails) else ""
-            yield HistMail(author, committer)
+            authorname = mails[0] if len(mails) >=1 else ""
+            author = mails[1] if len(mails) >=2 else ""
+            committername = mails[2] if len(mails) >= 3 else ""
+            committer = mails[3] if len(mails) >= 4 else ""
+            yield HistAuthor4(authorname, author, committername, committer)
 
 
 
