@@ -323,10 +323,10 @@ def each_author4() -> Iterator[HistAuthor4]:
     for line in out.splitlines():
         if line.startswith(";"):
             mails = line.strip().split(";")
-            authorname = mails[0] if len(mails) >=1 else ""
-            author = mails[1] if len(mails) >=2 else ""
-            committername = mails[2] if len(mails) >= 3 else ""
-            committer = mails[3] if len(mails) >= 4 else ""
+            authorname = mails[1] if len(mails) >=2 else ""
+            author = mails[2] if len(mails) >=3 else ""
+            committername = mails[3] if len(mails) >= 4 else ""
+            committer = mails[4] if len(mails) >= 5 else ""
             yield HistAuthor4(authorname, author, committername, committer)
 
 
