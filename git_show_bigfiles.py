@@ -308,7 +308,7 @@ def each_mail() -> Iterator[Union[Author, Committer]]:
             yield Author(mail.author)
         if mail.committer not in mail:
             emails.append(mail.committer)
-            yield Author(mail.committer)
+            yield Committer(mail.committer)
 def each_author4() -> Iterator[HistAuthor4]:
     git, main = GIT, BRANCH
     out = output(F"{git} rev-list '--pretty=;%an;%ae;%cn;%ce' {main} ", REPO)
