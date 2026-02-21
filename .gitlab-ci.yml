@@ -1,6 +1,9 @@
 python3-tests:
   stage: test
   image: $CI_REGISTRY/gdraheim/ci_image_python3
+  before_script:
+    - git config user.email "superman@example.test"
+    - git config user.name "Clar Kent Superman"
   script:
     - make style || true
     - make type
@@ -13,6 +16,9 @@ python3-tests:
 python3-coverage:
   stage: deploy
   image: $CI_REGISTRY/gdraheim/ci_image_python3
+  before_script:
+    - git config user.email "superman@example.test"
+    - git config user.name "Clar Kent Superman"
   script:
     - make coverage
     - find . -name '*.xml'
