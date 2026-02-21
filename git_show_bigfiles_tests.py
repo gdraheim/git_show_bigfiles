@@ -640,7 +640,7 @@ if __name__ == "__main__":
     if opt.xmlresults:
         if os.path.exists(opt.xmlresults):
             os.remove(opt.xmlresults)
-        XMLFILE = open(opt.xmlresults, "w")  # type: ignore[assignment]
+        XMLFILE = open(opt.xmlresults, "wb")  # type: ignore[assignment]
         logg.info("xml results into %s", opt.xmlresults)
     if XMLFILE:
         import xmlrunner  # type: ignore # pylint: disable=import-error
