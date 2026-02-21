@@ -30,7 +30,8 @@ cover:
 	$(COVERAGE3) report $(SCRIPT)
 coverage:	
 	$(MAKE) cover
-	$(COVERAGE3) report $(SCRIPT) xml
+	$(COVERAGE3) report $(SCRIPT)
+	$(COVERAGE3) xml
 
 # ....................................
 version:
