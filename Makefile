@@ -1,7 +1,7 @@
 BASEYEAR=2023
 FOR=today
 PARALLEL = -j2
-PYVERSION = 3.8
+PYVERSION = 3.9
 FILES = *.py *.cfg
 PYTHON3 = python3
 COVERAGE3 = ${PYTHON3} -m coverage
