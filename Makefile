@@ -8,23 +8,29 @@ COVERAGE3 = ${PYTHON3} -m coverage
 TWINE = twine
 GIT = git
 SCRIPT = git_show_bigfiles.py
-V=-v
+V=
+VV=-vv
 
-check:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py) 
+
+check: ; $(PYTHON3) $(SCRIPT:.py=_tests.py) 
+teststage: ; $(PYTHON3) $(SCRIPT:.py=_tests.py) $(VV) $V --xmlresults=TEST-teststage.xml
+
 
 test_%:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $V -k
+	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $(VV) $V -k
 
 t_%:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ -v $V -k
+	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $(VV) $V -k
 
 d_%:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ -v $V -k
+	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $(VV) $V -k
 
-cover coverage:
+cover:
 	$(COVERAGE3) run $(SCRIPT:.py=_tests.py)
 	$(COVERAGE3) report $(SCRIPT)
+coverage:	
+	$(MAKE) cover
+	$(COVERAGE3) report $(SCRIPT) xml
 
 # ....................................
 version:

@@ -1,0 +1,25 @@
+python3-tests:
+  stage: test
+  image: $CI_REGISTRY/gdraheim/ci_image_python3
+  script:
+    - make style || true
+    - make type
+    - make teststage
+    - find . -name '*.xml'
+  artifacts:
+    reports:
+      junit: "TEST-*.xml"
+
+python3-coverage:
+  stage: deploy
+  image: $CI_REGISTRY/gdraheim/ci_image_python3
+  script:
+    - make coverage
+    - find . -name '*.xml'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: tmp/coverage.xml
+  rules:
+    - when: on_success

@@ -1,10 +1,11 @@
 #! /usr/bin/env python3
+# pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,unused-argument,line-too-long,multiple-statements,consider-using-f-string
+# pylint: disable=invalid-name,unused-variable,dangerous-default-value
 """ git bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
 __version__ = "1.0.2012"
 
-# pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,dangerous-default-value,unused-argument,unused-variable,line-too-long,multiple-statements,consider-using-f-string
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
 
 import os
