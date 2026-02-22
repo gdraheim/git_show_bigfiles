@@ -2,7 +2,7 @@
 """ test cases for bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
-__version__ = "1.1.2012"
+__version__ = "1.1.3077"
 
 # pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,dangerous-default-value,unused-argument,unused-variable,line-too-long,multiple-statements,consider-using-f-string
 # pylint: disable=global-statement,invalid-name
