@@ -75,8 +75,8 @@ version:
 	@ $(GIT) add $(VERFILES) || true
 	@ ver=`cat pyproject.toml | sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
-nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml
-ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml
+nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/--package-name /' -e 's/".*//' -e q pyproject.toml
+ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"/--package-version /' -e 's/".*//' -e q pyproject.toml
 verfiles:  ; grep -l __version__ $(VERFILES)
 
 tag:
