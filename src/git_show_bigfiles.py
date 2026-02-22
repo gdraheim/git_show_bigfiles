@@ -4,7 +4,7 @@
 """ git bigfile detection """
 
 __copyright__ = "(C) 2023-2026 Guido Draheim, all rights reserved"""
-__version__ = "1.1.3081"
+__version__ = "1.1.3077"
 
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
 
@@ -27,25 +27,22 @@ try:
 except ImportError:
     from io import StringIO  # Python3
 
+REPO: Optional[str] = None
+GIT = "git"
+BRANCH = "main"
+PRETTY = False
+KEEP = False
+EXT = ""
+FMT = ""
 KB = 1024
 MB = KB * KB
-
-class Defaults:
-    repo: Optional[str] = None
-    git = "git"
-    branch = "main"
-    pretty = False
-    keep = False
-    ext = ""
-    fmt = ""
-    maxsize: float = 50.0  # in MB
-use = Defaults()
+MAXSIZE: float = 50.0  # in MB
 
 
 def str_(obj: Any, no: str = '-') -> str:
     if not obj:
         return no
-    if isinstance(obj, int) and use.pretty:
+    if isinstance(obj, int) and PRETTY:
         text = str(obj)
         if len(text) > 9:
             return text[:-9] + "_" + text[-9:-6] + "_" + text[-6:-3] + "_" + text[-3:]
@@ -362,8 +359,8 @@ def each_mail2() -> Iterator[Union[Author2, Committer2]]:
 
 
 def each_author4() -> Iterator[HistAuthor4]:
-    git, main = use.git, use.branch
-    out = output(F"{git} rev-list '--pretty=;%an;%ae;%cn;%ce' {main} ", use.repo)
+    git, main = GIT, BRANCH
+    out = output(F"{git} rev-list '--pretty=;%an;%ae;%cn;%ce' {main} ", REPO)
     revs: Dict[str, str] = OrderedDict()
     disks: Dict[str, int] = {}
     sizes: Dict[str, int] = {}
@@ -396,8 +393,8 @@ def get_sizes() -> str:
 
 
 def each_size5() -> Iterator[HistSize5]:
-    git, main = use.git, use.branch
-    out = output(F"{git} rev-list {main} --objects", use.repo)
+    git, main = GIT, BRANCH
+    out = output(F"{git} rev-list {main} --objects", REPO)
     revs: Dict[str, str] = OrderedDict()
     disks: Dict[str, int] = {}
     sizes: Dict[str, int] = {}
@@ -408,7 +405,7 @@ def each_size5() -> Iterator[HistSize5]:
     objectnames = "\n".join(revs.keys()) + "\n"
     logg.debug("objectnames => %s", objectnames)
     siz = output(F"{git} cat-file --batch-check='%(objectsize:disk) %(objectsize) %(objecttype) %(objectname)'",
-                 use.repo, pipe=objectnames)
+                 REPO, pipe=objectnames)
     logg.debug("cat-file => %s", siz)
     for disk1, size1, type1, rev in splits4(siz):
         disks[rev] = int(disk1)
@@ -427,7 +424,7 @@ def get_nosizes(exts: Optional[str] = None) -> str:
 
 
 def each_nosize5(exts: Optional[str] = None) -> Iterator[HistSize5]:
-    extlist = exts.split(",") if exts is not None else use.ext.split(",")
+    extlist = exts.split(",") if exts is not None else EXT.split(",")
     for rev, typ, disk, size, name in each_size5():
         if typ in ["tree"]:
             continue
@@ -444,7 +441,7 @@ def get_oversize() -> str:
 
 def each_oversize5() -> Iterator[HistSize5]:
     for rev, typ, disk, size, name in each_size5():
-        if size >= use.maxsize * MB:
+        if size >= MAXSIZE * MB:
             yield HistSize5(rev, typ, disk, size, name)
 
 
@@ -488,7 +485,7 @@ def get_nosumsizes(exts: Optional[str] = None) -> str:
 
 
 def each_nosumsize4(exts: Optional[str] = None) -> Iterator[SumSize4]:
-    extlist = exts.split(",") if exts is not None else use.ext.split(",")
+    extlist = exts.split(",") if exts is not None else EXT.split(",")
     for sums, disk, changes, name, parts in each_sumsize5():
         nam, ext = map_splitext(name)
         for pat in extlist:
@@ -532,7 +529,7 @@ def each_sumsize5() -> Iterator[SumSize5]:
 
 def each_sumoversize4() -> Iterator[SumSize4]:
     for disk, sums, changes, name, parts in each_sumoversize5():
-        logg.debug("sum disk %s size %s (over %i MB)", disk, sums, use.maxsize)
+        logg.debug("sum disk %s size %s (over %i MB)", disk, sums, MAXSIZE)
         yield SumSize4(disk, sums, changes, name)
 
 
@@ -541,9 +538,9 @@ def each_sumoversize5() -> Iterator[SumSize5]:
     filesums: Dict[str, int] = {}
     dchanges: Dict[str, List[int]] = {}
     for rev, typ, disk, size, name in each_size5():
-        if size < use.maxsize * MB:
+        if size < MAXSIZE * MB:
             continue
-        logg.debug("disk %s size %s (over %i MB)", disk, size, use.maxsize)
+        logg.debug("disk %s size %s (over %i MB)", disk, size, MAXSIZE)
         if not name:
             continue
         if typ in ["tree"]:
@@ -614,7 +611,7 @@ def each_extoversize5() -> Iterator[ExtSize5]:
         if not name:
             continue
         logg.debug("sum disk %s size %s (over %i MB)",
-                   disksum, filesum, use.maxsize)
+                   disksum, filesum, MAXSIZE)
         filename = fs.basename(name)
         nam, ext = map_splitext(filename)
         if ext not in filesums:
@@ -685,7 +682,7 @@ def each_noext1() -> Iterator[NoExt1]:
     noext = []
     for disksum, filesum, changes, ext, names in each_extsize5():
         logg.debug("ext '%s'", ext)
-        if fnmatch(ext, use.ext):
+        if fnmatch(ext, EXT):
             noext = names.split("|")
             logg.debug("found %s noext", len(noext))
     for name in noext:
@@ -704,8 +701,7 @@ def get_help() -> str:
 
 
 def _main(cmd: str, args: List[str]) -> None:
-    data: JSONList
-    if use.pretty:
+    if PRETTY:
         formats = {"disksum": " {:_}", "filesum": " {:_}", "changes": " "}
     else:
         formats = {"disksum": " ", "filesum": " ", "changes": " "}
@@ -718,58 +714,58 @@ def _main(cmd: str, args: List[str]) -> None:
     elif cmd in ["oversize"]:  # show files in all revs with sizes over lfs limit
         headers = ["disksize", "filesize", "rev", "typ"]
         data = list(each_oversize5())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_oversize())
     elif cmd in ["size"]:  # show sizes of all revs
         headers = ["disksize", "filesize", "rev", "typ"]
         data = list(each_size5())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_sizes())
     # show sizes of all revs with -E '' (default no extension)
     elif cmd in ["nosize"]:
         headers = ["disksize", "filesize", "rev", "typ"]
         data = list(each_nosize5())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_nosizes())
     elif cmd in ["nosumsize"]:  # show sizes of all revs with -E '' summarized per file history
         headers = ["disksum", "filesum", "changes"]
         data = list(each_nosumsize4())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_nosumsizes())
     elif cmd in ["sumsize"]:  # show sizes of all revs summarized per file history
         headers = ["disksum", "filesum", "changes"]
         data = list(each_sumsize4())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_sumsizes())
     # show sizes of all revs with oversize files summarized per file history
     elif cmd in ["sumoversize"]:
         headers = ["disksum", "filesum", "changes"]
         data = list(each_sumoversize4())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_sumsizes())
     elif cmd in ["extoversize"]:  # show ext with oversize files and summarize over history
         headers = ["disksum", "filesum", "changes", "ext", "files"]
         data = list(each_extoversize4())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_extoversizes())
     elif cmd in ["extsize"]:  # show sizes of all revs summarized per file extension and history
         headers = ["disksum", "filesum", "changes", "ext", "files"]
         data = list(each_extsize4())  # type: ignore[arg-type]
-        print(tabToFMT(use.fmt, data, headers, formats))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats))  # type: ignore[arg-type]
         # print(get_extsizes())
     elif cmd in ["noext"]:  # show files with no extension as show on 'extsizes'
-        print(tabToFMT(use.fmt, list(each_noext1())))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, list(each_noext1())))  # type: ignore[arg-type]
         # print(get_noexts())
     # show /.git/ paths having files (for migrations)
     elif cmd in ["git", "gitlist"]:
-        print(tabToFMT(use.fmt, list(each_gitdir())))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, list(each_gitdir())))  # type: ignore[arg-type]
         # print(get_noexts())
     # show list of authors and committers (for migrations)
     elif cmd in ["authors", "authorlist"]:
-        print(tabToFMT(use.fmt, list(each_author4())))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, list(each_author4())))  # type: ignore[arg-type]
     # show list of authors and committers (for migrations)
     elif cmd in ["mail", "emails", "emaillist"]:
-        print(tabToFMT(use.fmt, list(each_mail2())))  # type: ignore[arg-type]
+        print(tabToFMT(FMT, list(each_mail2())))  # type: ignore[arg-type]
         # print(get_noexts())
     elif "." in cmd and cmd[0] == "*":
         print(get_nosizes(exts=cmd[1:]))
@@ -781,6 +777,7 @@ def _main(cmd: str, args: List[str]) -> None:
 
 
 def _main_() -> int:
+    global GIT, BRANCH, REPO, MAXSIZE, PRETTY, EXT, FMT
     from optparse import OptionParser  # pylint: disable=deprecated-module,import-outside-toplevel
     cmdline = OptionParser("%prog [options] test*",
                            epilog=__doc__.strip().split("\n", 1)[0])
@@ -791,21 +788,21 @@ def _main_() -> int:
                        help="decrease logging level [%default]")
     cmdline.add_option("-V", "--version", action="count", default=0,
                        help="decrease logging level [%default]")
-    cmdline.add_option("-g", "--git", metavar="EXE", default=use.git,
+    cmdline.add_option("-g", "--git", metavar="EXE", default=GIT,
                        help="use different git client [%default]")
-    cmdline.add_option("-b", "--branch", metavar="NAME", default=use.branch,
+    cmdline.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
                        help="use different def branch [%default]")
-    cmdline.add_option("-r", "--repo", metavar="PATH", default=use.repo,
+    cmdline.add_option("-r", "--repo", metavar="PATH", default=REPO,
                        help="use different repo path [%default]")
     cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
                        help="additionally save the output log to a file [%default]")
-    cmdline.add_option("-x", "--maxsize", metavar="MB", default=use.maxsize,
+    cmdline.add_option("-x", "--maxsize", metavar="MB", default=MAXSIZE,
                        help="oversize files (in MB) must be in lfs [%default]")
     cmdline.add_option("-P", "--pretty", action="store_true", default=False,
                        help="enhanced value results [%default]")
-    cmdline.add_option("-E", "--ext", metavar="EXT", default=use.ext,
+    cmdline.add_option("-E", "--ext", metavar="EXT", default=EXT,
                        help="show nolist for this ext [%default]")
-    cmdline.add_option("-o", "--fmt", metavar="md|text|csv", default=use.fmt,
+    cmdline.add_option("-o", "--fmt", metavar="md|text|csv", default=FMT,
                        help="use differen tabtotext [%default]")
     opt, cmdline_args = cmdline.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5 + opt.quiet * 10)
@@ -815,14 +812,14 @@ def _main_() -> int:
         print("#", __copyright__)
         print(name, __version__)
         return 0
-    use.git = opt.git
-    use.branch = opt.branch
-    use.repo = opt.repo or None
-    use.maxsize = float(opt.maxsize)
-    use.pretty = opt.pretty
-    use.ext = opt.ext
-    use.fmt = opt.fmt
-    logg.debug("BRANCH %s REPO %s", use.branch, use.repo)
+    GIT = opt.git
+    BRANCH = opt.branch
+    REPO = opt.repo or None
+    MAXSIZE = float(opt.maxsize)
+    PRETTY = opt.pretty
+    EXT = opt.ext
+    FMT = opt.fmt
+    logg.debug("BRANCH %s REPO %s", BRANCH, REPO)
     #
     _logfile = None  # pylint: disable=invalid-name
     if opt.logfile:
@@ -844,3 +841,4 @@ def _main_() -> int:
 
 if __name__ == "__main__":
     sys.exit(_main_())
+    
