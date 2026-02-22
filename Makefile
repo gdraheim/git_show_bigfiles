@@ -76,15 +76,16 @@ version:
 	@ $(GIT) add $(VERFILES) || true
 	@ ver=`cat pyproject.toml | sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
-name: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/$(option) /' -e 's/".*//' -e q pyproject.toml
+name: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/$(option)/' -e 's/".*//' -e q pyproject.toml
 nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/$(option) /' -e 's/".*//' -e 's/_/-/g' -e q pyproject.toml
 ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"/$(option) /' -e 's/".*//' -e q pyproject.toml
+vers: ; @ sed -e '/^version *=/!d' -e 's/.*= *"/$(option)/' -e 's/".*//' -e q pyproject.toml
 verfiles:  ; grep -l __version__ $(VERFILES)
 
 tag:
-	@ ver=`grep "^version.*=" pyproject.toml | sed -e "s/version *= */v/"` \
+	@ ver=$$($(MAKE) -s vers) \
 	; rev=`git rev-parse --short HEAD` \
-	; echo ": ${GIT} tag $$ver $$rev"
+	; echo ": ${GIT} tag v$$ver $$rev"
 
 ############## https://pypi.org/...
 
