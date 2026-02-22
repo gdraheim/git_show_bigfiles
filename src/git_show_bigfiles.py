@@ -20,11 +20,7 @@ from fnmatch import fnmatchcase as fnmatch
 import logging
 logg = logging.getLogger("CHECK")
 
-if sys.version[0] == '2':
-    # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
-    stringtypes = basestring
-else:
-    stringtypes = str  # pylint: disable=invalid-name
+stringtypes = str  # pylint: disable=invalid-name
 
 try:
     from cStringIO import StringIO  # type: ignore[import, attr-defined]
@@ -238,8 +234,7 @@ def tabToFMT(fmt: str, result: JSONList, sorts: RowSortList = [], formats: Dict[
 
     def asdict(item: JSONDict) -> JSONDict:
         if hasattr(item, "_asdict"):
-            # type: ignore[attr-defined, union-attr, no-any-return, arg-type]
-            return item._asdict()
+            return item._asdict() # type: ignore[attr-defined, union-attr, no-any-return, arg-type] # nopep8
         if isinstance(item, stringtypes):
             return {"value": item}
         return item
@@ -718,45 +713,45 @@ def _main(cmd: str, args: List[str]) -> None:
         print(get_help())
     elif cmd in ["oversize"]:  # show files in all revs with sizes over lfs limit
         headers = ["disksize", "filesize", "rev", "typ"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_oversize5()), headers, formats))
+        data = list(each_oversize5()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_oversize())
     elif cmd in ["size"]:  # show sizes of all revs
         headers = ["disksize", "filesize", "rev", "typ"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_size5()), headers, formats))
+        data = list(each_size5()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_sizes())
     # show sizes of all revs with -E '' (default no extension)
     elif cmd in ["nosize"]:
         headers = ["disksize", "filesize", "rev", "typ"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_nosize5()), headers, formats))
+        data = list(each_nosize5()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_nosizes())
     elif cmd in ["nosumsize"]:  # show sizes of all revs with -E '' summarized per file history
         headers = ["disksum", "filesum", "changes"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_nosumsize4()), headers, formats))
+        data = list(each_nosumsize4()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_nosumsizes())
     elif cmd in ["sumsize"]:  # show sizes of all revs summarized per file history
         headers = ["disksum", "filesum", "changes"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_sumsize4()), headers, formats))
+        data = list(each_sumsize4()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_sumsizes())
     # show sizes of all revs with oversize files summarized per file history
     elif cmd in ["sumoversize"]:
         headers = ["disksum", "filesum", "changes"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_sumoversize4()), headers, formats))
+        data = list(each_sumoversize4()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_sumsizes())
     elif cmd in ["extoversize"]:  # show ext with oversize files and summarize over history
         headers = ["disksum", "filesum", "changes", "ext", "files"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_extoversize4()), headers, formats))
+        data = list(each_extoversize4()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_extoversizes())
     elif cmd in ["extsize"]:  # show sizes of all revs summarized per file extension and history
         headers = ["disksum", "filesum", "changes", "ext", "files"]
-        # type: ignore[arg-type]
-        print(tabToFMT(FMT, list(each_extsize4()), headers, formats))
+        data = list(each_extsize4()) # type: ignore[arg-type]
+        print(tabToFMT(FMT, data, headers, formats)) # type: ignore[arg-type]
         # print(get_extsizes())
     elif cmd in ["noext"]:  # show files with no extension as show on 'extsizes'
         print(tabToFMT(FMT, list(each_noext1())))  # type: ignore[arg-type]

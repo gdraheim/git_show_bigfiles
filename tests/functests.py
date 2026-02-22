@@ -25,11 +25,7 @@ from src import git_show_bigfiles as app  # pylint: disable=wrong-import-positio
 
 logg = logging.getLogger("TESTING")
 
-if sys.version[0] == '2':
-    # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
-    stringtypes = basestring
-else:
-    stringtypes = str  # pylint: disable=invalid-name
+stringtypes = str  # pylint: disable=invalid-name
 
 try:
     from cStringIO import StringIO  # type: ignore[import, attr-defined]
@@ -209,8 +205,7 @@ def get_caller_name() -> str:
 
 
 def get_caller_caller_name() -> str:
-    # type: ignore[union-attr]
-    frame = inspect.currentframe().f_back.f_back.f_back
+    frame = inspect.currentframe().f_back.f_back.f_back # type: ignore[union-attr] # nopep8
     return frame.f_code.co_name  # type: ignore[union-attr]
 
 
