@@ -20,7 +20,7 @@ python3-tests:
     reports:
       junit: "TEST-*.xml"
   rules:
-    - if: $CI_COMMIT_TITLE =~ /build/
+    - if: $CI_COMMIT_TITLE =~ /pkg/
       when: never
     - if: $CI_COMMIT_BRANCH
       when: on_success
@@ -43,7 +43,7 @@ python3-coverage:
   needs:
     - python3-tests
   rules:
-    - if: $CI_COMMIT_TITLE =~ /build/
+    - if: $CI_COMMIT_TITLE =~ /pkg/
       when: never
     - if: $CI_COMMIT_BRANCH
       when: on_success
@@ -58,8 +58,7 @@ python3-package:
       REPO: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
   script:
     - |
-      python3 -m build --version
-      python3 -m twine --version
+      python3 -m pip list
       make pkg
       python3 -m twine upload --repository-url "$REPO"  dist/*
   rules:
