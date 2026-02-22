@@ -60,8 +60,11 @@ python3-package:
     - |
       python3 -m pip list
       make pkg
-      { echo "[pypi]"; echo " username=$TWINE_USERNAME"; echo " packages=$TWINE_PASSWORD" } > "$HOME/.pypirc"
+      echo "TWINE_USERNAME=$TWINE_USERNAME | TWINE_PASSWORD=$TWINE_PASSWORD"
+      set -x
+      { echo "[pypi]"; echo " username=$TWINE_USERNAME"; echo " packages=$TWINE_PASSWORD"; } > "$HOME/.pypirc"
       cat "$HOME/.pypirc"
+      python3 -m twine upload --help |& grep -3 PASSWORD
       python3 -m twine upload --verbose --repository-url "$REPO"  dist/*
   rules:
     - if: $CI_COMMIT_BRANCH
