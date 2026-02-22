@@ -32,7 +32,7 @@ COVERAGE3 = ${PYTHON39} -m coverage
 PIP3 = $(PYTHON39) -m pip
 BUILD3=$(PYTHON39) -m build
 TWINE3=$(PYTHON39) -m twine
-MYPY3=mypy-$(PY39)
+MYPY3=$(PYTHON39) -m mypy
 
 # ..................................
 
