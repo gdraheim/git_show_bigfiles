@@ -205,7 +205,7 @@ def get_caller_name() -> str:
 
 
 def get_caller_caller_name() -> str:
-    frame = inspect.currentframe().f_back.f_back.f_back # type: ignore[union-attr] # nopep8
+    frame = inspect.currentframe().f_back.f_back.f_back  # type: ignore[union-attr] # nopep8
     return frame.f_code.co_name  # type: ignore[union-attr]
 
 
