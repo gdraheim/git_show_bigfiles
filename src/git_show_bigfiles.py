@@ -701,6 +701,7 @@ def get_help() -> str:
 
 
 def _main(cmd: str, args: List[str]) -> None:
+    data: JSONList
     if PRETTY:
         formats = {"disksum": " {:_}", "filesum": " {:_}", "changes": " "}
     else:
@@ -841,4 +842,3 @@ def _main_() -> int:
 
 if __name__ == "__main__":
     sys.exit(_main_())
-    
