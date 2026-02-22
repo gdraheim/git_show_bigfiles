@@ -109,8 +109,6 @@ docker-pip3-install:
   needs:
     - python3-package
   rules:
-    - if: $CI_COMMIT_TITLE =~ /pkgs/
-      when: on_success
     - if: $CI_COMMIT_BRANCH
-      when: manual
+      when: on_success
     - when: never
