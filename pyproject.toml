@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "git_show_bigfiles"
-version = "1.1.3077"
+version = "1.1.3081"
 description = "git bigfile detection for migration projects"
 readme = { "file" = "README", content-type = "text/markdown" }
 license = "LGPL-2.1+"
