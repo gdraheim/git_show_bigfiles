@@ -64,8 +64,7 @@ python3-package:
     - |
       python3 -m pip list
       make pkg
-      set -x
-      python3 -m twine upload --verbose --repository-url "$REPO"  --username=$TWINE_USERNAME --password=$TWINE_PASSWORD dist/*
+      python3 -m twine upload --verbose --repository-url "$REPO" dist/*
   rules:
     - if: $CI_COMMIT_BRANCH
       when: on_success
@@ -86,7 +85,7 @@ docker-pip3-install:
       TAG=`basename "$CI_COMMIT_BRANCH"`
       [ "$CI_DEFAULT_BRANCH" == "$TAG" ] && TAG="latest"
       { echo "FROM python:$PY" \
-      ; echo "RUN python3 -m pip install git_show_bigfiles" \
+      ; echo "RUN set -x; python3 -m pip install -i "$REPO" git_show_bigfiles" \
       ; echo "RUN python3 -m pip show --files git_show_bigfiles" \
       ; echo "RUN python3 -m git_show_bigfiles --version || python3 -m git_show_bigfiles --help" \
       ; } > Dockerfile
@@ -97,6 +96,8 @@ docker-pip3-install:
   needs:
     - python3-package
   rules:
+    - if: $CI_COMMIT_TITLE =~ /pkgs/
+      when: on_success
     - if: $CI_COMMIT_BRANCH
       when: manual
     - when: never
