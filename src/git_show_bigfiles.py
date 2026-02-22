@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,unused-argument,line-too-long,multiple-statements,consider-using-f-string
-# pylint: disable=invalid-name,unused-variable,dangerous-default-value
+# pylint: disable=invalid-name,unused-variable,dangerous-default-value,global-statement
 """ git bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
@@ -657,8 +657,9 @@ def _main(cmd: str, args: List[str]) -> None:
         methodcall = globals()[F"get_{name}"]
         print(methodcall())
 
-if __name__ == "__main__":
-    from optparse import OptionParser # pylint: disable=deprecated-module
+def _main_() -> int:
+    global GIT, BRANCH, REPO, MAXSIZE, PRETTY, EXT, FMT
+    from optparse import OptionParser # pylint: disable=deprecated-module,import-outside-toplevel
     cmdline = OptionParser("%prog [options] test*",
                       epilog=__doc__.strip().split("\n", 1)[0])
     cmdline.formatter.max_help_position = 28
@@ -706,3 +707,7 @@ if __name__ == "__main__":
         _main(cmdline_args[0], cmdline_args[1:])
     else:
         print(get_help())
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(_main_())

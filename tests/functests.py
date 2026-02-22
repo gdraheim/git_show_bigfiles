@@ -2,9 +2,10 @@
 """ test cases for bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
-__version__ = "1.0.2012"
+__version__ = "1.1.2012"
 
 # pylint: disable=missing-function-docstring,missing-class-docstring,unspecified-encoding,dangerous-default-value,unused-argument,unused-variable,line-too-long,multiple-statements,consider-using-f-string
+# pylint: disable=global-statement,invalid-name
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, cast
 
 import os
@@ -19,7 +20,8 @@ import shutil
 import random
 import logging
 #
-import git_show_bigfiles as app
+sys.path.append(os.curdir)
+from src import git_show_bigfiles as app # pylint: disable=wrong-import-position,import-error
 
 logg = logging.getLogger("TESTING")
 
@@ -586,8 +588,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[0].ext, "dummyfile")
         if not KEEP: self.rm_testdir()
 
-if __name__ == "__main__":
-    from optparse import OptionParser # pylint: disable=deprecated-module
+def _main_() -> int:
+    global KEEP, GIT, BRANCH
+    from optparse import OptionParser # pylint: disable=deprecated-module,import-outside-toplevel
     cmdline = OptionParser("%prog [options] test*",
                       epilog=__doc__.strip().split("\n", 1)[0])
     cmdline.formatter.max_help_position = 28
@@ -643,7 +646,7 @@ if __name__ == "__main__":
         XMLFILE = open(opt.xmlresults, "wb")  # type: ignore[assignment]
         logg.info("xml results into %s", opt.xmlresults)
     if XMLFILE:
-        import xmlrunner  # type: ignore # pylint: disable=import-error
+        import xmlrunner  # type: ignore # pylint: disable=import-error,import-outside-toplevel
         Runner = xmlrunner.XMLTestRunner
         RESULT = Runner(XMLFILE).run(suite)
         logg.info(" XML reports written to %s", opt.xmlresults)
@@ -651,4 +654,8 @@ if __name__ == "__main__":
         Runner = unittest.TextTestRunner
         RESULT = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
     if not RESULT.wasSuccessful():
-        sys.exit(1)
+        return 1
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(_main_())

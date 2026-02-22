@@ -4,29 +4,52 @@ PARALLEL = -j2
 PYVERSION = 3.9
 FILES = *.py *.cfg
 PYTHON3 = python3
-COVERAGE3 = ${PYTHON3} -m coverage
 TWINE = twine
 GIT = git
-SCRIPT = git_show_bigfiles.py
+SCRIPT = src/git_show_bigfiles.py
+TESTS = tests/functests.py
 V=
 VV=-vv
 
+defautl: nam ver
 
-check: ; $(PYTHON3) $(SCRIPT:.py=_tests.py) 
-teststage: ; $(PYTHON3) $(SCRIPT:.py=_tests.py) $(VV) $V --xmlresults=TEST-teststage.xml
+ifeq ("$(wildcard /usr/bin/python3.11)","/usr/bin/python3.12")
+  PY39=3.12
+endif
+ifeq ("$(wildcard /usr/bin/python3.9)","/usr/bin/python3.9")
+  PY39=3.9
+endif
+ifeq ("$(wildcard /usr/bin/python3.10)","/usr/bin/python3.10")
+  PY39=3.10
+endif
+ifeq ("$(wildcard /usr/bin/python3.11)","/usr/bin/python3.11")
+  PY39=3.11
+endif
+
+PYTHON39=python$(PY39)
+COVERAGE3 = ${PYTHON39} -m coverage
+PIP3 = $(PYTHON39) -m pip
+BUILD3=$(PYTHON39) -m build
+TWINE3=$(PYTHON39) -m twine
+MYPY3=mypy-$(PY39)
+
+# ..................................
+
+check: ; $(PYTHON3) $(TESTS) 
+teststage: ; $(PYTHON3) $(TESTS) $(VV) $V --xmlresults=TEST-teststage.xml
 
 
 test_%:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $(VV) $V -k
+	$(PYTHON3) $(TESTS)  $@ $(VV) $V -k
 
 t_%:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $(VV) $V -k
+	$(PYTHON3) $(TESTS)  $@ $(VV) $V -k
 
 d_%:
-	$(PYTHON3) $(SCRIPT:.py=_tests.py)  $@ $(VV) $V -k
+	$(PYTHON3) $(TESTS)  $@ $(VV) $V -k
 
 cover:
-	$(COVERAGE3) run $(SCRIPT:.py=_tests.py)
+	$(COVERAGE3) run $(TESTS)
 	$(COVERAGE3) report $(SCRIPT)
 coverage:	
 	$(MAKE) cover
@@ -35,21 +58,28 @@ coverage:
 
 # ....................................
 version:
-	@ grep -l __version__ $(FILES) | { while read f; do : \
-	; THISYEAR=`date +%Y -d "$(FOR)"` ; YEARS=$$(expr $$THISYEAR - $(BASEYEAR)) \
-        ; WEEKnDAY=`date +%W%u -d "$(FOR)"` ; sed -i \
-	-e "/^version /s/[.]-*[0123456789][0123456789][0123456789]*/.$$YEARS$$WEEKnDAY/" \
-	-e "/^ *__version__/s/[.]-*[0123456789][0123456789][0123456789]*\"/.$$YEARS$$WEEKnDAY\"/" \
-	-e "/^ *__version__/s/[.]\\([0123456789]\\)\"/.\\1.$$YEARS$$WEEKnDAY\"/" \
-	-e "/^ *__copyright__/s/(C) \\([123456789][0123456789]*\\)-[0123456789]*/(C) \\1-$$THISYEAR/" \
-	-e "/^ *__copyright__/s/(C) [123456789][0123456789]* /(C) $$THISYEAR /" \
+	@ grep -l __version__ $(VERFILES) | { while read f; do : \
+	; B="$(BASEYEAR)"; C=$$B; test -z "$(ORIGYEAR)" || C="$(ORIGYEAR)" \
+	; Y=`date +%Y -d "$(FOR)"` ; X=$$(expr $$Y - $$B) \
+	; W=`date +%W -d "$(FOR)"` \
+	; D=`date +%u -d "$(FOR)"` ; sed -i \
+	-e "/^ *version = /s/[.]-*[0123456789][0123456789][0123456789]*/.$$X$$W$$D/" \
+	-e "/^ *__version__/s/[.]-*[0123456789][0123456789][0123456789]*\"/.$$X$$W$$D\"/" \
+	-e "/^ *__version__/s/[.]\\([0123456789]\\)\"/.\\1.$$X$$W$$D\"/" \
+	-e "/^ *__copyright__/s/(C) [0123456789]*-[0123456789]*/(C) $$C-$$Y/" \
+	-e "/^ *__copyright__/s/(C) [0123456789]* /(C) $$Y /" \
 	$$f; done; }
-	@ grep ^__version__ $(FILES) | grep -v _tests.py
-	@ ver=`cat $(SCRIPT) | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
+	@ grep "^version =" $(VERFILES) || true
+	@ grep ^__version__ $(VERFILES) || true
+	@ $(GIT) add $(VERFILES) || true
+	@ ver=`cat pyproject.toml | sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
+nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml
+ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml
+verfiles:  ; grep -l __version__ $(VERFILES)
 
 tag:
-	@ ver=`grep "version.*=" setup.cfg | sed -e "s/version *= */v/"` \
+	@ ver=`grep "^version.*=" pyproject.toml | sed -e "s/version *= */v/"` \
 	; rev=`git rev-parse --short HEAD` \
 	; echo ": ${GIT} tag $$ver $$rev"
 
@@ -57,42 +87,43 @@ tag:
 
 README: README.MD Makefile
 	cat README.MD | sed -e "/\\/badge/d" -e /^---/q > README
-setup.py: Makefile
-	{ echo '#!/usr/bin/env python3' \
-	; echo 'import setuptools' \
-	; echo 'setuptools.setup()' ; } > setup.py
-	chmod +x setup.py
-setup.py.tmp: Makefile
-	echo "import setuptools ; setuptools.setup()" > setup.py
 
-.PHONY: build
-build:
+package pkg:
 	rm -rf build dist *.egg-info
-	$(MAKE) $(PARALLEL) README setup.py
-	# pip install --root=~/local . -v
-	$(PYTHON3) setup.py sdist
-	- rm -v setup.py README
-	$(TWINE) check dist/*
-	: $(TWINE) upload dist/*
+	$(MAKE) $(PARALLEL) README
+	$(BUILD3)
+	- rm -v README
+	$(MAKE) fix-metadata-version
+	$(TWINE3) check dist/*
+	: $(TWINE3) upload dist/*
+
+fix-metadata-version:
+	ls dist/*
+	rm -rf dist.tmp; mkdir dist.tmp
+	cd dist.tmp; for z in ../dist/*; do case "$$z" in *.whl) unzip $$z ;; *) tar xzvf $$z;; esac \
+	; ( find . -name PKG-INFO ; find . -name METADATA ) \
+	| while read f; do echo FOUND $$f; sed -i -e "s/Metadata-Version: 2.4/Metadata-Version: 2.2/" $$f; done \
+	; case "$$z" in *.whl) zip -r $$z * ;; *) tar czvf $$z *;; esac ; ls -l $$z; done
 
 ins install:
-	$(MAKE) setup.py
-	$(PYTHON3) -m pip install --no-compile --user .
-	rm -v setup.py
+	$(MAKE) README
+	test ! -d build || rm -rf build
+	$(PIP3) install --no-compile --user .
+	rm -v README
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
+	: $(PYTHON39) -m $(notdir $(SCRIPT:.py=)) --help
 show:
-	test -d tmp || mkdir -v tmp
-	cd tmp && $(PYTHON3) -m pip show -f $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+	@ $(PIP3) show -f `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` 
+
 uns uninstall: 
-	test -d tmp || mkdir -v tmp
-	cd tmp && $(PYTHON3) -m pip uninstall -v --yes $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+	$(PIP3) uninstall -v --yes `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
 
 # ...........................................
 mypy:
 	zypper install -y mypy
 	zypper install -y python3-click python3-pathspec
 
-MYPY = mypy
+MYPY = $(MYPY3)
 MYPY_STRICT = --strict --show-error-codes --show-error-context --no-warn-unused-ignores --python-version $(PYVERSION) --implicit-reexport
 AUTOPEP8=autopep8
 AUTOPEP8_INPLACE= --in-place
@@ -105,6 +136,6 @@ AUTOPEP8_INPLACE= --in-place
 	$(GIT) --no-pager diff $(@:.pep8=)
 
 type: 
-	$(MAKE) $(SCRIPT).type $(SCRIPT:.py=_tests.py).type
+	$(MAKE) $(SCRIPT).type $(TESTS).type
 pep8 style: 
-	$(MAKE) $(SCRIPT).pep8 $(SCRIPT:.py=_tests.py).pep8
+	$(MAKE) $(SCRIPT).pep8 $(TESTS).pep8
