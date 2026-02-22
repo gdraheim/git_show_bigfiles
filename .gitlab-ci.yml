@@ -98,7 +98,7 @@ docker-pip3-install:
       TAG=`basename "$CI_COMMIT_BRANCH"`
       [ "$CI_DEFAULT_BRANCH" == "$TAG" ] && TAG="latest"
       { echo "FROM python:$PY" \
-      ; echo "RUN set -x; python3 -m pip install -i "$REPO" git_show_bigfiles" \
+      ; echo "RUN set -x; python3 -m pip install -i "$REPO2" git_show_bigfiles" \
       ; echo "RUN python3 -m pip show --files git_show_bigfiles" \
       ; echo "RUN python3 -m git_show_bigfiles --version || python3 -m git_show_bigfiles --help" \
       ; } > Dockerfile
