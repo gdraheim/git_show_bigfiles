@@ -1,5 +1,5 @@
 [![Gitlab Status](https://gitlab.com/gdraheim/git_show_bigfiles/badges/main/pipeline.svg?key_width=120&key_text=gitlab+pipeline)](https://gitlab.com/gdraheim/git_show_bigfiles)
-[![Code Coverage](https://img.shields.io/badge/10%20tests-43%25%20coverage-brightgreen)](https://github.com/gdraheim/git_show_bigfiles/blob/main/git_show_bigfiles_tests.py)
+[![Code Coverage](https://img.shields.io/badge/10%20tests-42%25%20coverage-brightgreen)](https://github.com/gdraheim/git_show_bigfiles/blob/main/git_show_bigfiles_tests.py)
 [![PyPI version](https://badge.fury.io/py/git_show_bigfiles.svg)](https://pypi.org/project/git_show_bigfiles/)
 
 # git show bigfiles - detection of files by size
