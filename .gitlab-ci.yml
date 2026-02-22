@@ -1,7 +1,7 @@
 stages:
-  test
-  coverage
-  deploy
+  - test
+  - coverage
+  - deploy
 
 python3-tests:
   stage: test
