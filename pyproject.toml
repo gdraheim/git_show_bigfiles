@@ -35,9 +35,6 @@ git_show_bigfiles = "git_show_bigfiles.git_show_bigfiles:_main_"
 include-package-data = false
 package-dir = {"git_show_bigfiles" = "src"}
 
-[tool.setuptools.packages.find]
-include = ["src"]
-
 [tool.pycodestyle]
 max-line-length = 127
 ignore = "E301,E302,E305,E306,E701"
