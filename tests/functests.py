@@ -1,5 +1,4 @@
 #! /usr/bin/env python3
-from src import git_show_bigfiles as app  # pylint: disable=wrong-import-position,import-error
 """ test cases for bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
@@ -22,6 +21,7 @@ import random
 import logging
 #
 sys.path.append(os.curdir)
+from src import git_show_bigfiles as app  # pylint: disable=wrong-import-position,import-error # nopep8
 
 logg = logging.getLogger("TESTING")
 
