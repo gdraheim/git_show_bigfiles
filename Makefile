@@ -90,7 +90,7 @@ README: README.MD Makefile
 	cat README.MD | sed -e "/\\/badge/d" -e /^---/q > README
 
 package pkg:
-	rm -rf build dist *.egg-info
+	- rm -rf build dist dist.tmp sdist *.egg-info
 	$(MAKE) $(PARALLEL) README
 	$(BUILD3)
 	- rm -v README
