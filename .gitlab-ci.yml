@@ -43,6 +43,7 @@ python3-coverage:
 python3-package:
   stage: deploy
   image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
+  resource_group: deploy1
   variables:
       TWINE_USERNAME: $CI_DEPLOY_USER 
       TWINE_PASSWORD: $CI_DEPLOY_PASSWORD
@@ -56,9 +57,10 @@ python3-package:
       when: on_success
     - when: never
 
-pip3-install:
+docker-pip3-install:
   stage: deploy
   image: docker:cli
+  resource_group: deploy1
   services:
     - docker:dind
   variables:
@@ -72,7 +74,7 @@ pip3-install:
       { echo "FROM python:$PY"
       ; echo "RUN python3 -m pip install git_show_bigfiles"
       ; echo "RUN python3 -m git_show_bigfiles --version"
-      ; } > Dockerfile
+      } > Dockerfile
       docker build --pull -t "$CI_REGISTRY_IMAGE:$TAG" .
       docker push "$CI_REGISTRY_IMAGE:$TAG"
   after_script:
