@@ -69,9 +69,9 @@ python3-package:
       pkgversion=$(sed -e '/^version= */!d' -e 's/.*=//' -e q pyproject.toml)
       export SERVER_URL=$CI_SERVER_URL
       set -x
-      old=$(gitlab project-package list --project-id $CI_PROJECT_ID --package-name "$pkgname" --package-version "$pkgversion" | sed -e '/^id *:/!d' -e 's/.*://' -e q)
-      gitlab project-package delete --project-id $CI_PROJECT_ID --id "$old" || true
-      python3 -m twine upload --verbose --repository-url "$REPO" dist/* || true
+      old=$(gitlab project-package list --project-id $CI_PROJECT_ID --package-name "$pkgname" --package-version "$pkgversion" | sed -e '/^id *:/!d' -e 's/.*: *//' -e q)
+      [ -z "$old" ] || gitlab project-package delete --project-id $CI_PROJECT_ID --id "$old"
+      python3 -m twine upload --verbose --repository-url "$REPO" dist/*
   rules:
     - if: $CI_COMMIT_BRANCH
       when: on_success
