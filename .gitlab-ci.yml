@@ -94,14 +94,16 @@ docker-pip3-install:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     - |
-      NAM=$(make -s name)
-      PKG=$(make -s nam)
+      # RUN=$(make -s name)
+      # PKG=$(make -s nam)
+      RUN=$(sed -e '/^name *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml)
+      PKG=$(sed -e '/^name *=/!d' -e 's/.*= *"//' -e 's/".*//' -e 's/_/-/g' -e q pyproject.toml)
       TAG=`basename "$CI_COMMIT_BRANCH"`
       [ "$CI_DEFAULT_BRANCH" == "$TAG" ] && TAG="latest"
       { echo "FROM python:$PY" \
       ; echo "RUN set -x; python3 -m pip install -i "$REPO2" $PKG" \
       ; echo "RUN set -x; python3 -m pip show --files $PKG" \
-      ; echo "RUN set -x; python3 -m $NAM --version" \
+      ; echo "RUN set -x; python3 -m $RUN --version" \
       ; } > Dockerfile
       docker build --pull -t "$CI_REGISTRY_IMAGE:$TAG" .
       docker push "$CI_REGISTRY_IMAGE:$TAG"
