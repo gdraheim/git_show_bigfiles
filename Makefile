@@ -4,10 +4,10 @@ PARALLEL = -j2
 PYVERSION = 3.9
 FILES = *.py *.cfg
 PYTHON3 = python3
-TWINE = twine
 GIT = git
 SCRIPT = src/git_show_bigfiles.py
 TESTS = tests/functests.py
+VERFILES = src/*.py tests/*tests.py pyproject.toml
 V=
 VV=-vv
 

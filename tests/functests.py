@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+from src import git_show_bigfiles as app  # pylint: disable=wrong-import-position,import-error
 """ test cases for bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
@@ -21,14 +22,14 @@ import random
 import logging
 #
 sys.path.append(os.curdir)
-from src import git_show_bigfiles as app # pylint: disable=wrong-import-position,import-error
 
 logg = logging.getLogger("TESTING")
 
 if sys.version[0] == '2':
-    stringtypes = basestring # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
+    # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
+    stringtypes = basestring
 else:
-    stringtypes = str # pylint: disable=invalid-name
+    stringtypes = str  # pylint: disable=invalid-name
 
 try:
     from cStringIO import StringIO  # type: ignore[import, attr-defined]
@@ -43,6 +44,7 @@ KB = 1024
 MB = KB * KB
 MAXSIZE = 50.0
 
+
 def decodes(text: Union[bytes, str]) -> str:
     if isinstance(text, bytes):
         encoded = sys.getdefaultencoding()
@@ -52,43 +54,57 @@ def decodes(text: Union[bytes, str]) -> str:
             return text.decode(encoded)
         except UnicodeDecodeError:
             return text.decode("latin-1")
-    return text # also for None
+    return text  # also for None
+
+
 def sh____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.check_call(cmd, cwd=cwd, shell=shell)
+
+
 def sx____(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True) -> int:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, cwd=cwd, shell=shell)
+
+
 def output(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> str:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if pipe is not None:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell,
+                               stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(pipe.encode("utf-8"))
     else:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell,
+                               stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out)
+
+
 def output2(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> Tuple[str, int]:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     if pipe is not None:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell,
+                               stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(pipe.encode("utf-8"))
     else:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell,
+                               stdout=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), run.returncode
+
+
 def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool = True, pipe: Optional[str] = None) -> Tuple[str, str, int]:
     if isinstance(cmd, stringtypes):
         logg.info(": %s", cmd)
@@ -99,9 +115,11 @@ def output3(cmd: Union[str, List[str]], cwd: Optional[str] = None, shell: bool =
                                stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = run.communicate(pipe.encode("utf-8"))
     else:
-        run = subprocess.Popen(cmd, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        run = subprocess.Popen(cmd, cwd=cwd, shell=shell,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
+
 
 def gentext(size: int, start: str = "") -> str:
     random.seed(1234567891234567890)
@@ -122,6 +140,7 @@ def gentext(size: int, start: str = "") -> str:
         result.write(x)
     return cast(str, result.getvalue())
 
+
 def text_file(filename: str, content: str) -> None:
     filedir = os.path.dirname(filename)
     if not os.path.isdir(filedir):
@@ -138,6 +157,7 @@ def text_file(filename: str, content: str) -> None:
         else:
             f.write(content)
         f.close()
+
 
 def zip_file(filename: str, content: Dict[str, str]) -> None:
     filedir = os.path.dirname(filename)
@@ -158,44 +178,59 @@ def zip_file(filename: str, content: Dict[str, str]) -> None:
             else:
                 f.writestr(name, data)
 
+
 def split2(inp: Iterable[str]) -> Iterator[Tuple[str, str]]:
     for line in inp:
         if " " in line:
             a, b = line.split(" ", 1)
             yield a, b.strip()
+
+
 def splits2(inp: str) -> Iterator[Tuple[str, str]]:
     for a, b in split2(inp.splitlines()):
         yield a, b
+
 
 def split3(inp: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
     for line in inp:
         if " " in line:
             a, b, c = line.split(" ", 2)
             yield a, b, c.strip()
+
+
 def splits3(inp: str) -> Iterator[Tuple[str, str, str]]:
     for a, b, c in split3(inp.splitlines()):
         yield a, b, c
 
+
 def get_caller_name() -> str:
     frame = inspect.currentframe().f_back.f_back  # type: ignore[union-attr]
     return frame.f_code.co_name  # type: ignore[union-attr]
+
+
 def get_caller_caller_name() -> str:
-    frame = inspect.currentframe().f_back.f_back.f_back  # type: ignore[union-attr]
+    # type: ignore[union-attr]
+    frame = inspect.currentframe().f_back.f_back.f_back
     return frame.f_code.co_name  # type: ignore[union-attr]
+
 
 class GitBigfileTest(unittest.TestCase):
     def caller_testname(self) -> str:
         name = get_caller_caller_name()
         x1 = name.find("_")
-        if x1 < 0: return name
+        if x1 < 0:
+            return name
         x2 = name.find("_", x1 + 1)
-        if x2 < 0: return name
+        if x2 < 0:
+            return name
         return name[:x2]
+
     def testname(self, suffix: Optional[str] = None) -> str:
         name = self.caller_testname()
         if suffix:
             return name + "_" + suffix
         return name
+
     def mk_testdir(self, testname: Optional[str] = None) -> str:
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp." + testname
@@ -203,12 +238,14 @@ class GitBigfileTest(unittest.TestCase):
             shutil.rmtree(newdir)
         os.makedirs(newdir)
         return newdir
+
     def rm_testdir(self, testname: Optional[str] = None) -> str:
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp." + testname
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
+
     def test_101_simple(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -218,7 +255,9 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"cd {testdir} && {git} add *.*")
         sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && {git} --no-pager show --name-only")
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_102_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -238,7 +277,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(20 * KB, 20480)
         self.assertEqual(sizes["a.txt"], 20480)
         self.assertEqual(sizes["b.zip"], 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_103_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -269,7 +310,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes["b.zip"], 20588)
         self.assertEqual(types["a.txt"], "blob")
         self.assertEqual(types["b.zip"], "blob")
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_202_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -287,7 +330,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[2].name, "b.zip")
         self.assertEqual(sizes[1].filesize, 20480)
         self.assertEqual(sizes[2].filesize, 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_203_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -308,7 +353,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[2].name, "b.zip")
         self.assertEqual(sizes[1].filesize, 20480)
         self.assertEqual(sizes[2].filesize, 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_213_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -335,7 +382,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[1].filesize, 5120)
         self.assertEqual(sizes[2].filesize, 20588)
         self.assertEqual(sizes[4].filesize, 20480)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_233_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -356,7 +405,8 @@ class GitBigfileTest(unittest.TestCase):
         sizes = list(app.each_oversize5())
         for n, elem in enumerate(sizes):
             logg.info("sizes[%i] = %s", n, elem)
-        self.assertEqual(len(sizes), 3)  # only 'blob' - as 'tree' objects are small
+        # only 'blob' - as 'tree' objects are small
+        self.assertEqual(len(sizes), 3)
         self.assertEqual(20 * KB, 20480)
         self.assertEqual(sizes[0].name, "a.txt")
         self.assertEqual(sizes[1].name, "b.zip")
@@ -364,7 +414,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[0].filesize, 5120)
         self.assertEqual(sizes[1].filesize, 20588)
         self.assertEqual(sizes[2].filesize, 20480)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_234_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -391,7 +443,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[1].name, "a.txt")
         self.assertEqual(sizes[0].filesize, 20588)
         self.assertEqual(sizes[1].filesize, 20480)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_313_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -414,7 +468,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[1].name, "b.zip")
         self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_333_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -437,7 +493,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[1].name, "b.zip")
         self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_334_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -460,8 +518,10 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[0].name, "b.zip")
         self.assertEqual(sizes[1].name, "a.txt")
         self.assertEqual(sizes[0].filesum, 20588)
-        self.assertEqual(sizes[1].filesum, 20480) # without 5 KB
-        if not KEEP: self.rm_testdir()
+        self.assertEqual(sizes[1].filesum, 20480)  # without 5 KB
+        if not KEEP:
+            self.rm_testdir()
+
     def test_413_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -485,7 +545,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[1].ext, ".zip")
         self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_415_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -514,7 +576,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
         self.assertEqual(sizes[2].filesum, 8192)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_433_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -538,7 +602,9 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[1].ext, ".zip")
         self.assertEqual(sizes[0].filesum, 5120 + 20480)
         self.assertEqual(sizes[1].filesum, 20588)
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
     def test_434_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -562,8 +628,10 @@ class GitBigfileTest(unittest.TestCase):
         self.assertEqual(sizes[0].ext, ".zip")
         self.assertEqual(sizes[1].ext, ".txt")
         self.assertEqual(sizes[0].filesum, 20588)
-        self.assertEqual(sizes[1].filesum, 20480) # without 5KB
-        if not KEEP: self.rm_testdir()
+        self.assertEqual(sizes[1].filesum, 20480)  # without 5KB
+        if not KEEP:
+            self.rm_testdir()
+
     def test_515_bigfile(self) -> None:
         testdir = self.mk_testdir()
         git, main = GIT, BRANCH
@@ -586,28 +654,30 @@ class GitBigfileTest(unittest.TestCase):
         logg.info("sizes %s", sizes)
         self.assertEqual(len(sizes), 1)
         self.assertEqual(sizes[0].ext, "dummyfile")
-        if not KEEP: self.rm_testdir()
+        if not KEEP:
+            self.rm_testdir()
+
 
 def _main_() -> int:
     global KEEP, GIT, BRANCH
-    from optparse import OptionParser # pylint: disable=deprecated-module,import-outside-toplevel
+    from optparse import OptionParser  # pylint: disable=deprecated-module,import-outside-toplevel
     cmdline = OptionParser("%prog [options] test*",
-                      epilog=__doc__.strip().split("\n", 1)[0])
+                           epilog=__doc__.strip().split("\n", 1)[0])
     cmdline.formatter.max_help_position = 28
     cmdline.add_option("-v", "--verbose", action="count", default=0,
-                      help="increase logging level [%default]")
+                       help="increase logging level [%default]")
     cmdline.add_option("-g", "--git", metavar="EXE", default=GIT,
-                      help="use different git client [%default]")
+                       help="use different git client [%default]")
     cmdline.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
-                      help="use different def branch [%default]")
+                       help="use different def branch [%default]")
     cmdline.add_option("-k", "--keep", action="count", default=0,
-                      help="keep docker build container [%default]")
+                       help="keep docker build container [%default]")
     cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
-                      help="additionally save the output log to a file [%default]")
+                       help="additionally save the output log to a file [%default]")
     cmdline.add_option("--failfast", action="store_true", default=False,
-                      help="Stop the test run on the first error or failure. [%default]")
+                       help="Stop the test run on the first error or failure. [%default]")
     cmdline.add_option("--xmlresults", metavar="FILE", default=None,
-                      help="capture results as a junit xml file [%default]")
+                       help="capture results as a junit xml file [%default]")
     opt, cmdline_args = cmdline.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
@@ -620,20 +690,23 @@ def _main_() -> int:
         if os.path.exists(opt.logfile):
             os.remove(opt.logfile)
         LOGFILE = logging.FileHandler(opt.logfile)
-        LOGFILE.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
+        LOGFILE.setFormatter(logging.Formatter(
+            "%(levelname)s:%(relativeCreated)d:%(message)s"))
         logging.getLogger().addHandler(LOGFILE)
         logg.info("log diverted to %s", opt.logfile)
     #
     # unittest.main()
     suite = unittest.TestSuite()
-    if not cmdline_args: cmdline_args = ["test_*"]
+    if not cmdline_args:
+        cmdline_args = ["test_*"]
     for arg in cmdline_args:
         for classname in sorted(globals()):
             if not classname.endswith("Test"):
                 continue
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
-                if "*" not in arg: arg += "*"
+                if "*" not in arg:
+                    arg += "*"
                 if len(arg) > 2 and arg[1] == "_":
                     arg = "test" + arg[1:]
                 if fnmatch(method, arg):
@@ -652,10 +725,12 @@ def _main_() -> int:
         logg.info(" XML reports written to %s", opt.xmlresults)
     else:
         Runner = unittest.TextTestRunner
-        RESULT = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
+        RESULT = Runner(verbosity=opt.verbose,
+                        failfast=opt.failfast).run(suite)
     if not RESULT.wasSuccessful():
         return 1
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(_main_())

@@ -72,7 +72,7 @@ Common distro packages are:
 ### release targets
 
 * `make version`
-* `make build`
+* `make pkg`
 
 ## RELEASE PROCESS
 
@@ -80,7 +80,7 @@ Common distro packages are:
 * `make style`  # python style
 * `make check`
 * `make version` # or `make version FOR=tomorrow`
-* `make install` 
+* `make pkg`
 * `make uninstalls`
 * `make build` # default build
 * `make coverage`
