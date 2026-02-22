@@ -19,11 +19,15 @@ python3-tests:
   artifacts:
     reports:
       junit: "TEST-*.xml"
+  rules:
+    - if: $CI_COMMIT_TITLE =~ /build/
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      when: on_success
+    - when: manual
 
 python3-coverage:
   stage: test
-  needs:
-    - python3-tests
   image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
   before_script:
     - git config --global user.email "superman@example.test"
@@ -36,7 +40,11 @@ python3-coverage:
       coverage_report:
         coverage_format: cobertura
         path: tmp/coverage.xml
+  needs:
+    - python3-tests
   rules:
+    - if: $CI_COMMIT_TITLE =~ /build/
+      when: never
     - if: $CI_COMMIT_BRANCH
       when: on_success
     - when: manual
@@ -62,9 +70,6 @@ python3-package:
 docker-pip3-install:
   stage: deploy
   image: docker:cli
-  resource_group: only1
-  needs:
-    - python3-package
   services:
     - docker:dind
   variables:
@@ -85,6 +90,8 @@ docker-pip3-install:
       docker push "$CI_REGISTRY_IMAGE:$TAG"
   after_script:
       - docker logout $CI_REGISTRY
+  needs:
+    - python3-package
   rules:
     - if: $CI_COMMIT_BRANCH
       when: manual
