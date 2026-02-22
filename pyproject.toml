@@ -32,7 +32,7 @@ issues = "https://github.com/gdraheim/git_show_bigfiles/issues"
 git_show_bigfiles = "git_show_bigfiles.git_show_bigfiles:_main_"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+include = ["src"]
 
 [tool.setuptools]
 package-dir = {"git_show_bigfiles" = "src"}
