@@ -65,7 +65,7 @@ python3-package:
     - |
       python3 -m pip list
       make pkg
-      python3 -m twine upload --verbose --repository-url "$REPO" dist/*
+      python3 -m twine upload --verbose --repository-url "$REPO" dist/* || true
   rules:
     - if: $CI_COMMIT_BRANCH
       when: on_success
