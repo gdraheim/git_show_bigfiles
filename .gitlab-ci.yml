@@ -56,16 +56,15 @@ python3-package:
       TWINE_USERNAME: $CI_DEPLOY_USER 
       TWINE_PASSWORD: $CI_DEPLOY_PASSWORD
       REPO: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+  before_script:
+    - [ -n "$CI_DEPLOY_USER" ] || echo "WARNING: need gitlab-deploy-token > Settings > Repository > Deploy-Token" >&2
+    # CI_REGISTRY_USER and CI_REGISTRY_PASSWORD are predefined - not so for CI_PACKAGE_*
   script:
     - |
       python3 -m pip list
       make pkg
-      echo "TWINE_USERNAME=$TWINE_USERNAME | TWINE_PASSWORD=$TWINE_PASSWORD"
       set -x
-      { echo "[pypi]"; echo " username=$TWINE_USERNAME"; echo " packages=$TWINE_PASSWORD"; } > "$HOME/.pypirc"
-      cat "$HOME/.pypirc"
-      python3 -m twine upload --help |& grep -3 PASSWORD
-      python3 -m twine upload --verbose --repository-url "$REPO"  dist/*
+      python3 -m twine upload --verbose --repository-url "$REPO"  --username=$TWINE_USERNAME --password=$TWINE_PASSWORD dist/*
   rules:
     - if: $CI_COMMIT_BRANCH
       when: on_success
