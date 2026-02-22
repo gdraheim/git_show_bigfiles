@@ -4,7 +4,7 @@
 """ git bigfile detection """
 
 __copyright__ = "(C) Guido Draheim, all rights reserved"""
-__version__ = "1.0.3077"
+__version__ = "1.1.3077"
 
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
 
