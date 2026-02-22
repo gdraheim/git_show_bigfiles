@@ -57,8 +57,9 @@ python3-package:
       TWINE_PASSWORD: $CI_DEPLOY_PASSWORD
       REPO: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
   before_script:
-    - [ -n "$CI_DEPLOY_USER" ] || echo "WARNING: need gitlab-deploy-token > Settings > Repository > Deploy-Token" >&2
-    # CI_REGISTRY_USER and CI_REGISTRY_PASSWORD are predefined - not so for CI_PACKAGE_*
+    - |
+      [ -n "$CI_DEPLOY_USER" ] || echo "WARNING: need gitlab-deploy-token > Settings > Repository > Deploy-Token" >&2
+      # CI_REGISTRY_USER and CI_REGISTRY_PASSWORD are predefined - not so for CI_PACKAGE_*
   script:
     - |
       python3 -m pip list
