@@ -60,7 +60,9 @@ python3-package:
     - |
       python3 -m pip list
       make pkg
-      python3 -m twine upload --repository-url "$REPO"  dist/*
+      { echo "[pypi]"; echo " username=$TWINE_USERNAME"; echo " packages=$TWINE_PASSWORD" } > "$HOME/.pypirc"
+      cat "$HOME/.pypirc"
+      python3 -m twine upload --verbose --repository-url "$REPO"  dist/*
   rules:
     - if: $CI_COMMIT_BRANCH
       when: on_success
