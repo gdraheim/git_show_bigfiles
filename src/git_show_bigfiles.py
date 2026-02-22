@@ -806,7 +806,8 @@ def _main_() -> int:
     cmdline.add_option("-o", "--fmt", metavar="md|text|csv", default=FMT,
                        help="use differen tabtotext [%default]")
     opt, cmdline_args = cmdline.parse_args()
-    logging.basicConfig(level=logging.WARNING - opt.verbose * 5 + opt.quiet * 10)
+    logging.basicConfig(level=logging.WARNING -
+                        opt.verbose * 5 + opt.quiet * 10)
     #
     if opt.version:
         name = os.path.splitext(os.path.basename(__file__))[0]
