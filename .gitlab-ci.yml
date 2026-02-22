@@ -64,14 +64,13 @@ python3-package:
   script:
     - |
       python3 -m pip list
-      set -x
       today=$(date +%Y%m%d)
       grep "$today" pyproject.toml || sed -i -e "/^version *=/s/\" *\$/.$today\"/" pyproject.toml
       grep ^version pyproject.toml
       grep "$today" pyproject.toml
       make pkg
-      pkgname=$(make nam)
-      pkgversion=$(make ver)
+      pkgname=$(make -s option=--package-name nam)
+      pkgversion=$(make -s option=--package-version ver)
       pkgproject="--project-id $CI_PROJECT_ID"
       export SERVER_URL=$CI_SERVER_URL
       set -x
@@ -95,12 +94,14 @@ docker-pip3-install:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     - |
+      NAM=$(make -s name)
+      PKG=$(make -s nam)
       TAG=`basename "$CI_COMMIT_BRANCH"`
       [ "$CI_DEFAULT_BRANCH" == "$TAG" ] && TAG="latest"
       { echo "FROM python:$PY" \
-      ; echo "RUN set -x; python3 -m pip install -i "$REPO2" git_show_bigfiles" \
-      ; echo "RUN python3 -m pip show --files git_show_bigfiles" \
-      ; echo "RUN python3 -m git_show_bigfiles --version || python3 -m git_show_bigfiles --help" \
+      ; echo "RUN set -x; python3 -m pip install -i "$REPO2" $PKG" \
+      ; echo "RUN set -x; python3 -m pip show --files $PKG" \
+      ; echo "RUN set -x; python3 -m $NAM --version" \
       ; } > Dockerfile
       docker build --pull -t "$CI_REGISTRY_IMAGE:$TAG" .
       docker push "$CI_REGISTRY_IMAGE:$TAG"

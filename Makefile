@@ -8,6 +8,7 @@ GIT = git
 SCRIPT = src/git_show_bigfiles.py
 TESTS = tests/functests.py
 VERFILES = src/*.py tests/*tests.py pyproject.toml
+option =
 V=
 VV=-vv
 
@@ -75,8 +76,9 @@ version:
 	@ $(GIT) add $(VERFILES) || true
 	@ ver=`cat pyproject.toml | sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
-nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/--package-name /' -e 's/".*//' -e 's/_/-/g' -e q pyproject.toml
-ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"/--package-version /' -e 's/".*//' -e q pyproject.toml
+name: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/$(option) /' -e 's/".*//' -e q pyproject.toml
+nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"/$(option) /' -e 's/".*//' -e 's/_/-/g' -e q pyproject.toml
+ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"/$(option) /' -e 's/".*//' -e q pyproject.toml
 verfiles:  ; grep -l __version__ $(VERFILES)
 
 tag:
@@ -114,10 +116,10 @@ ins install:
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 	: $(PYTHON39) -m $(notdir $(SCRIPT:.py=)) --help
 show:
-	@ $(PIP3) show -f `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` 
+	@ $(PIP3) show -f $$($(MAKE) -s nam)
 
 uns uninstall: 
-	$(PIP3) uninstall -v --yes `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
+	$(PIP3) uninstall -v --yes $$($(MAKE) -s nam)
 
 # ...........................................
 mypy:
