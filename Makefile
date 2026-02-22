@@ -13,6 +13,7 @@ VV=-vv
 
 defautl: nam ver
 
+PY39=3
 ifeq ("$(wildcard /usr/bin/python3.11)","/usr/bin/python3.12")
   PY39=3.12
 endif

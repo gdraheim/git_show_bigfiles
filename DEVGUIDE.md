@@ -81,12 +81,12 @@ Common distro packages are:
 * `make check`
 * `make version` # or `make version FOR=tomorrow`
 * `make pkg`
-* `make uninstalls`
-* `make build` # default build
+* `make ins`
+* `make uns`
 * `make coverage`
    * update README.md if necessary
 * `git push` # if necessary
-* wait for github workflows to be okay (if active)
+* wait for gitlab-ci or github-workflows to be okay (if active)
 * prepare a tmp.changes.txt 
 * `make tag`
    * run shown `git tag -F tmp.changes.txt v1.x` 
