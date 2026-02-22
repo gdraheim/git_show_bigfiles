@@ -22,7 +22,7 @@ python3-tests:
 
 python3-coverage:
   stage: test
-  dependencies: 
+  needs:
     - python3-tests
   image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
   before_script:
@@ -51,6 +51,8 @@ python3-package:
       REPO: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
   script:
     - |
+      python3 -m build --version
+      python3 -m twine --version
       make pkg
       python3 -m twine upload --repository-url "$REPO"  dist/*
   rules:
@@ -76,7 +78,7 @@ docker-pip3-install:
       { echo "FROM python:$PY" \
       ; echo "RUN python3 -m pip install git_show_bigfiles" \
       ; echo "RUN python3 -m git_show_bigfiles --version" \
-      } > Dockerfile
+      ; } > Dockerfile
       docker build --pull -t "$CI_REGISTRY_IMAGE:$TAG" .
       docker push "$CI_REGISTRY_IMAGE:$TAG"
   after_script:
