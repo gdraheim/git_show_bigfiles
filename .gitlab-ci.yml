@@ -3,7 +3,7 @@ stages:
   - deploy
 
 variables:
-  PY: "3.13"
+  PY: "3.11"
 
 python3-tests:
   stage: test
@@ -80,7 +80,7 @@ docker-pip3-install:
       { echo "FROM python:$PY" \
       ; echo "RUN python3 -m pip install git_show_bigfiles" \
       ; echo "RUN python3 -m pip show --files git_show_bigfiles" \
-      ; echo "RUN python3 -m git_show_bigfiles --version" \
+      ; echo "RUN python3 -m git_show_bigfiles --version || python3 -m git_show_bigfiles --help" \
       ; } > Dockerfile
       docker build --pull -t "$CI_REGISTRY_IMAGE:$TAG" .
       docker push "$CI_REGISTRY_IMAGE:$TAG"

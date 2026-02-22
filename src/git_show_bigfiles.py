@@ -3,7 +3,7 @@
 # pylint: disable=invalid-name,unused-variable,dangerous-default-value,global-statement
 """ git bigfile detection """
 
-__copyright__ = "(C) Guido Draheim, all rights reserved"""
+__copyright__ = "(C) 2023-2026 Guido Draheim, all rights reserved"""
 __version__ = "1.1.3077"
 
 from typing import Union, Optional, Tuple, List, Dict, Iterator, Iterable, Any, cast, Sequence, Callable, NamedTuple
@@ -784,6 +784,10 @@ def _main_() -> int:
     cmdline.formatter.max_help_position = 28
     cmdline.add_option("-v", "--verbose", action="count", default=0,
                        help="increase logging level [%default]")
+    cmdline.add_option("-^", "--quiet", action="count", default=0,
+                       help="decrease logging level [%default]")
+    cmdline.add_option("-V", "--version", action="count", default=0,
+                       help="decrease logging level [%default]")
     cmdline.add_option("-g", "--git", metavar="EXE", default=GIT,
                        help="use different git client [%default]")
     cmdline.add_option("-b", "--branch", metavar="NAME", default=BRANCH,
@@ -801,8 +805,13 @@ def _main_() -> int:
     cmdline.add_option("-o", "--fmt", metavar="md|text|csv", default=FMT,
                        help="use differen tabtotext [%default]")
     opt, cmdline_args = cmdline.parse_args()
-    logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
+    logging.basicConfig(level=logging.WARNING - opt.verbose * 5 + opt.quiet * 10)
     #
+    if opt.version:
+        name = os.path.splitext(os.path.basename(__file__))[0]
+        print("#", __copyright__)
+        print(name, __version__)
+        return 0
     GIT = opt.git
     BRANCH = opt.branch
     REPO = opt.repo or None
