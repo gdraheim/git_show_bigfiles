@@ -317,8 +317,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"cd {testdir} && {git} add *.*")
         sh____(F"cd {testdir} && {git} --no-pager commit -m 'initial'")
         sh____(F"cd {testdir} && {git} --no-pager diff --name-only")
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_size5())
         self.assertEqual(20 * KB, 20480)
         self.assertEqual(sizes[1].name, "a.txt")
@@ -339,8 +339,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} add *.*", testdir)
         sh____(F"{git} --no-pager commit -m 'initial'", testdir)
         sh____(F"{git} --no-pager diff --name-only", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_size5())
         self.assertEqual(len(sizes), 3)
         self.assertEqual(20 * KB, 20480)
@@ -364,8 +364,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_size5())
         for n, elem in enumerate(sizes):
             logg.info("sizes[%i] = %s", n, elem)
@@ -394,9 +394,9 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", text5)
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = 0.001
-        self.assertEqual(int(app.opt_maxsize * app.MB), 1048)
+        app.use.repo = testdir
+        app.use.maxsize = 0.001
+        self.assertEqual(int(app.use.maxsize * app.MB), 1048)
         sizes = list(app.each_oversize5())
         for n, elem in enumerate(sizes):
             logg.info("sizes[%i] = %s", n, elem)
@@ -426,9 +426,9 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", text5)
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = 0.011
-        self.assertEqual(int(app.opt_maxsize * app.MB), 11534)
+        app.use.repo = testdir
+        app.use.maxsize = 0.011
+        self.assertEqual(int(app.use.maxsize * app.MB), 11534)
         sizes = list(app.each_oversize5())
         for n, elem in enumerate(sizes):
             logg.info("sizes[%i] = %s", n, elem)
@@ -454,8 +454,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_sumsize5())
         self.assertEqual(len(sizes), 2)
         self.assertEqual(20 * KB, 20480)
@@ -479,8 +479,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = 0.001
+        app.use.repo = testdir
+        app.use.maxsize = 0.001
         sizes = list(app.each_sumoversize5())
         self.assertEqual(len(sizes), 2)
         self.assertEqual(20 * KB, 20480)
@@ -504,9 +504,9 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = 0.011
-        self.assertEqual(int(app.opt_maxsize * app.MB), 11534)
+        app.use.repo = testdir
+        app.use.maxsize = 0.011
+        self.assertEqual(int(app.use.maxsize * app.MB), 11534)
         sizes = list(app.each_sumoversize5())
         self.assertEqual(len(sizes), 2)
         self.assertEqual(20 * KB, 20480)
@@ -530,8 +530,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_extsize5())
         logg.info("sizes %s", sizes)
         self.assertEqual(len(sizes), 2)
@@ -559,8 +559,8 @@ class GitBigfileTest(unittest.TestCase):
         text_file(F"{testdir}/dummyfile", gentext(8 * KB))
         sh____(F"{git} add dummyfile", testdir)
         sh____(F"{git} --no-pager commit -m 'dummy'", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_extsize5())
         logg.info("sizes %s", sizes)
         self.assertEqual(len(sizes), 3)
@@ -587,8 +587,8 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = 0.001
+        app.use.repo = testdir
+        app.use.maxsize = 0.001
         sizes = list(app.each_extoversize5())
         logg.info("sizes %s", sizes)
         self.assertEqual(len(sizes), 2)
@@ -613,9 +613,9 @@ class GitBigfileTest(unittest.TestCase):
         sh____(F"{git} --no-pager diff --name-only", testdir)
         text_file(F"{testdir}/a.txt", gentext(5 * KB))
         sh____(F"{git} --no-pager commit -m 'update' a.txt", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = 0.011
-        self.assertEqual(int(app.opt_maxsize * app.MB), 11534)
+        app.use.repo = testdir
+        app.use.maxsize = 0.011
+        self.assertEqual(int(app.use.maxsize * app.MB), 11534)
         sizes = list(app.each_extoversize5())
         logg.info("sizes %s", sizes)
         self.assertEqual(len(sizes), 2)
@@ -643,8 +643,8 @@ class GitBigfileTest(unittest.TestCase):
         text_file(F"{testdir}/dummyfile", gentext(8 * KB))
         sh____(F"{git} add dummyfile", testdir)
         sh____(F"{git} --no-pager commit -m 'dummy'", testdir)
-        app.opt_repo = testdir
-        app.opt_maxsize = MAXSIZE
+        app.use.repo = testdir
+        app.use.maxsize = MAXSIZE
         sizes = list(app.each_noext1())
         logg.info("sizes %s", sizes)
         self.assertEqual(len(sizes), 1)
