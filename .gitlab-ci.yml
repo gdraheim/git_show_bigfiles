@@ -22,7 +22,7 @@ python3-tests:
 
 python3-coverage:
   stage: test
-  depends: python3-tests
+  dependencies: python3-tests
   image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
   before_script:
     - git config --global user.email "superman@example.test"
