@@ -66,7 +66,7 @@ python3-package:
       python3 -m pip list
       set -x
       today=$(date +%Y%m%d)
-      grep "$today" pyproject.toml || sed -i -e "/^version *:/s/[.][0-9]*/&.$today/" pyproject.toml
+      grep "$today" pyproject.toml || sed -i -e "/^version *=/s/\" *\$/.$today\"/" pyproject.toml
       grep ^version pyproject.toml
       grep "$today" pyproject.toml
       make pkg
