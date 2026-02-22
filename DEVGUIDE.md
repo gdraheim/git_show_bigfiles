@@ -90,8 +90,8 @@ Common distro packages are:
 * prepare a tmp.changes.txt 
 * `make tag`
    * run shown `git tag -F tmp.changes.txt v1.x` 
-* `git push --tags`
 * update the short description on github
-* consider making a github release with the latest news
-* `make build`
+* `make pkg`
   * run show `twine ..`
+* `git push --tags`
+* consider making a github release with the latest news
