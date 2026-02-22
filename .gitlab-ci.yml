@@ -3,9 +3,12 @@ stages:
   - coverage
   - deploy
 
+variables:
+  PY: "latest"
+
 python3-tests:
   stage: test
-  image: $CI_REGISTRY/gdraheim/ci_image_python3
+  image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
   before_script:
     - git config --global user.email "superman@example.test"
     - git config --global user.name "Clar Kent Superman"
@@ -20,7 +23,7 @@ python3-tests:
 
 python3-coverage:
   stage: coverage
-  image: $CI_REGISTRY/gdraheim/ci_image_python3
+  image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
   before_script:
     - git config --global user.email "superman@example.test"
     - git config --global user.name "Clar Kent Superman"
@@ -33,7 +36,25 @@ python3-coverage:
         coverage_format: cobertura
         path: tmp/coverage.xml
   rules:
-    - when: on_success
+    - if: $CI_COMMIT_BRANCH
+      when: on_success
+    - when: manual
+
+python3-package:
+  stage: deploy
+  image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
+  variables:
+      TWINE_USERNAME: $CI_DEPLOY_USER 
+      TWINE_PASSWORD: $CI_DEPLOY_PASSWORD
+      REPO: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+  script:
+    - |
+      make pkg
+      python3 -m twine upload --repository-url "$REPO"  dist/*
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: on_success
+    - when: never
 
 pip3-install:
   stage: deploy
@@ -48,7 +69,7 @@ pip3-install:
     - |
       TAG=`basename "$CI_COMMIT_BRANCH"`
       [ "$CI_DEFAULT_BRANCH" == "$TAG" ] && TAG="latest"
-      { echo "FROM python:3.13"
+      { echo "FROM python:$PY"
       ; echo "RUN python3 -m pip install git_show_bigfiles"
       ; echo "RUN python3 -m git_show_bigfiles --version"
       ; } > Dockerfile
@@ -58,5 +79,5 @@ pip3-install:
       - docker logout $CI_REGISTRY
   rules:
     - if: $CI_COMMIT_BRANCH
-      exists:
-        - Dockerfile
+      when: on_success
+    - when: never
