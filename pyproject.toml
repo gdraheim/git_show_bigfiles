@@ -31,6 +31,9 @@ issues = "https://github.com/gdraheim/git_show_bigfiles/issues"
 [project.scripts]
 git_show_bigfiles = "git_show_bigfiles.git_show_bigfiles:_main_"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools]
 package-dir = {"git_show_bigfiles" = "src"}
 

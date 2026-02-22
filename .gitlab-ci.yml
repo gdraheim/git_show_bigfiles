@@ -44,7 +44,6 @@ python3-coverage:
 python3-package:
   stage: deploy
   image: $CI_REGISTRY/gdraheim/ci_image_python3:$PY
-  resource_group: only1
   variables:
       TWINE_USERNAME: $CI_DEPLOY_USER 
       TWINE_PASSWORD: $CI_DEPLOY_PASSWORD
@@ -64,8 +63,8 @@ docker-pip3-install:
   stage: deploy
   image: docker:cli
   resource_group: only1
-  # needs:
-  #   - python3-package
+  needs:
+    - python3-package
   services:
     - docker:dind
   variables:
@@ -88,5 +87,5 @@ docker-pip3-install:
       - docker logout $CI_REGISTRY
   rules:
     - if: $CI_COMMIT_BRANCH
-      when: on_success
+      when: manual
     - when: never
